@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Connect 4 AI - Minimax Visualization</title>
+    <style>
+        :root{
+            --bg-dark: #0b0f1a;
+            --card: rgba(255,255,255,0.04);
+            --glass: rgba(255,255,255,0.03);
+            --pink: #ff6bcb;
+            --yellow: #ffd166;
+            --blue: #4da3ff;
+            --muted: #9aa6b2;
+            --white: #ffffff;
+            --overlay-bg: rgba(3,6,15,0.75);
+        }
+
+        *{box-sizing:border-box;margin:0;padding:0}
+        html,body{height:100%}
+        body{
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            background: linear-gradient(160deg,#071028 0%,#0b0f1a 60%);
+            color:var(--white);
+            padding:22px;
+            min-height:100vh;
+        }
+
+        .container{max-width:1400px;margin:0 auto}
+        .header{text-align:center;margin-bottom:18px}
+        .header h1{
+            font-size:2.2rem;
+            background:linear-gradient(90deg,var(--pink),var(--yellow));
+            -webkit-background-clip:text;
+            -webkit-text-fill-color:transparent;
+            margin-bottom:6px;
+        }
+        .header p{color:var(--muted)}
+
+        .main-grid{
+            display:grid;
+            grid-template-columns:360px 1fr;
+            grid-template-rows:auto 460px;
+            gap:18px;
+            align-items:start;
+        }
+
+        .card{
+            background: linear-gradient(180deg,var(--card),var(--glass));
+            border-radius:14px;padding:18px;
+            box-shadow:0 8px 30px rgba(2,6,23,0.6);
+            border:1px solid rgba(255,255,255,0.03);
+        }
+        .card-header{
+            background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+            margin:-18px -18px 12px -18px;padding:12px 16px;border-radius:12px 12px 0 0;
+            font-weight:700;color:var(--muted);font-size:.98rem;
+        }
+
+        /* Controls */
+        .controls{display:flex;flex-direction:column;gap:12px}
+        .settings-label{display:block;margin-bottom:8px;color:var(--muted);font-weight:700}
+        .radio-group{display:flex;flex-direction:column;gap:8px}
+        .radio-option{
+            display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;
+            cursor:pointer;background:linear-gradient(90deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
+            border:1px solid rgba(255,255,255,0.03);transition:all .18s;font-weight:600;color:var(--white);
+        }
+        .radio-option.selected{
+            box-shadow:0 6px 20px rgba(255,107,203,0.12);
+            border:1px solid rgba(255,214,102,0.2);
+            background:linear-gradient(90deg, rgba(255,107,203,0.08), rgba(77,163,255,0.04));
+        }
+        .slider-container{padding:12px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));border:1px solid rgba(255,255,255,0.03);text-align:center}
+        .depth-value{font-size:1.4rem;color:var(--yellow);font-weight:800;margin-bottom:8px}
+
+        .controls-actions{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+        .btn{padding:12px 14px;border-radius:10px;font-weight:800;cursor:pointer;border:none;color:#071028;transition:all .14s}
+        .btn-start{background:linear-gradient(90deg,var(--yellow),var(--pink));}
+        .btn-reset{background:linear-gradient(90deg,var(--blue),#82c7ff);}
+        .btn:disabled{opacity:.5;cursor:not-allowed}
+
+        .status-card{background:transparent;padding:10px;border-radius:8px;border:1px dashed rgba(255,255,255,0.02)}
+        .status-label{color:var(--muted);font-size:.82rem;margin-bottom:6px}
+        .status-value{font-weight:800;color:var(--white);font-size:1.05rem}
+
+        /* Board */
+        .board-card{display:flex;flex-direction:column;gap:12px}
+        .board-container{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00));padding:18px;border-radius:12px}
+        .column-indicators{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:8px}
+        .column-indicator{text-align:center;font-size:1.2rem;color:transparent;transition:color .18s}
+        .column-indicator.active{color:var(--pink);filter:drop-shadow(0 6px 18px rgba(255,107,203,0.12))}
+        .board-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;justify-items:center;padding:10px;border-radius:12px}
+        .cell{width:64px;height:64px;background:#07172a;border-radius:50%;border:2px solid rgba(255,255,255,0.03);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s}
+        .cell:hover:not(.filled){transform:translateY(-4px);box-shadow:0 10px 30px rgba(0,0,0,0.45);border-color:rgba(255,255,255,0.06)}
+        .cell.filled{cursor:default}
+        .cell.human{background:radial-gradient(circle at 35% 25%, rgba(255,107,203,0.95),#ff3fb0 35%,#ff2e95 100%);border-color:rgba(255,107,203,0.7);box-shadow:0 0 22px rgba(255,107,203,0.12)}
+        .cell.ai{background:radial-gradient(circle at 30% 35%, rgba(77,163,255,0.95),#4da3ff 35%,#2f93ff 100%);border-color:rgba(77,163,255,0.7);box-shadow:0 0 22px rgba(77,163,255,0.12)}
+        .cell.last-move{border-width:4px;border-color:var(--yellow);animation:pulse 1s infinite}
+        @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+        .legend{display:flex;gap:20px;justify-content:center;margin-top:8px}
+        .legend-item{display:flex;gap:10px;align-items:center;font-weight:700;color:var(--muted)}
+        .legend-disc{width:20px;height:20px;border-radius:50%}
+        .legend-disc.human{background:linear-gradient(90deg,var(--pink),#ff3fb0)}
+        .legend-disc.ai{background:linear-gradient(90deg,var(--blue),#8fd1ff)}
+
+        /* Tree - Scrollable and Centered */
+        .tree-area{grid-column:1 / -1;min-height:380px;max-height:720px;overflow:hidden;position:relative}
+        .tree-canvas-container{
+            background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
+            border-radius:10px;
+            height:100%;
+            overflow:auto;
+            position:relative;
+        }
+        #treeCanvas{
+            display:block;
+            background:transparent;
+        }
+        .tree-empty{color:var(--muted);text-align:center;padding:24px;font-size:.98rem;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+        .tree-legend{position:absolute;left:12px;top:12px;background:rgba(2,6,23,0.65);border-radius:8px;padding:8px 10px;color:var(--muted);font-size:.9rem;border:1px solid rgba(255,255,255,0.02);z-index:10}
+        .tree-legend .item{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+        .node-dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+
+        /* API status & loading */
+        .api-status{position:fixed;right:20px;bottom:20px;background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:10px 14px;border-radius:10px;border-left:4px solid var(--pink);font-size:.92rem;color:var(--muted);box-shadow:0 8px 30px rgba(2,6,23,0.6)}
+        .api-status.connected{border-left-color:var(--blue);color:#cfe9ff}
+        .api-status.error{border-left-color:var(--yellow);color:#ffe9c2}
+
+        .loading-overlay{position:fixed;left:0;top:0;width:100%;height:100%;background:linear-gradient(180deg, rgba(2,6,23,0.7), rgba(2,6,23,0.85));display:none;align-items:center;justify-content:center;z-index:1000}
+        .loading-overlay.active{display:flex}
+        .loading-content{text-align:center;color:var(--muted)}
+        .spinner{width:50px;height:50px;border-radius:50%;border:4px solid rgba(255,255,255,0.04);border-top-color:var(--pink);animation:spin 1s linear infinite;margin:0 auto 12px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+
+        /* Final results overlay */
+        .final-overlay{
+            position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:var(--overlay-bg);z-index:2000;
+        }
+        .final-panel{
+            width:min(720px,94%);background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));border-radius:12px;padding:18px;border:1px solid rgba(255,255,255,0.06);box-shadow:0 20px 80px rgba(0,0,0,0.6);color:var(--white);
+        }
+        .final-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+        .final-title{font-size:1.4rem;font-weight:900;background:linear-gradient(90deg,var(--pink),var(--yellow));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .final-close{background:transparent;border:none;color:var(--muted);cursor:pointer;font-weight:700}
+        .final-body{display:flex;gap:18px;flex-wrap:wrap;align-items:center;justify-content:center;padding:6px 0}
+        .final-card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00));padding:12px;border-radius:10px;min-width:180px;text-align:center;border:1px solid rgba(255,255,255,0.03)}
+        .final-winner{font-size:1.6rem;font-weight:900;margin-bottom:6px}
+        .final-score{font-size:1.2rem;font-weight:800;color:var(--muted)}
+        .final-actions{display:flex;gap:12px;justify-content:center;margin-top:14px}
+        .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.08);color:var(--white);padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:800}
+        .btn-primary{background:linear-gradient(90deg,var(--yellow),var(--pink));padding:10px 12px;border-radius:10px;border:none;color:#071028;cursor:pointer;font-weight:900}
+
+        @media (max-width:980px){
+            .main-grid{grid-template-columns:1fr;grid-template-rows:auto auto}
+            .cell{width:52px;height:52px}
+            .final-body{flex-direction:column}
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 CONNECT 4 AI</h1>
+        </div>
+
+        <div class="main-grid">
+            <div class="card" id="settingsCard">
+                <div class="card-header">⚙️ Controls</div>
+                <div class="controls">
+                    <div>
+                        <label class="settings-label">Algorithm</label>
+                        <div class="radio-group" id="algorithmGroup">
+                            <label class="radio-option selected"><input type="radio" name="algorithm" value="minimax" checked> Minimax</label>
+                            <label class="radio-option"><input type="radio" name="algorithm" value="alphabeta"> Minimax (Alpha-Beta)</label>
+                            <label class="radio-option"><input type="radio" name="algorithm" value="expected"> Expected Minimax</label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="settings-label">Depth (K)</label>
+                        <div class="slider-container">
+                            <div class="depth-value">K = <span id="depthValue">4</span></div>
+                            <input type="range" id="depthSlider" min="1" max="8" value="4">
+                        </div>
+                    </div>
+
+                    <div class="controls-actions">
+                        <button class="btn btn-start" id="startBtn">▶ START</button>
+                        <button class="btn btn-reset" id="resetBtn" disabled>↻ RESET</button>
+                    </div>
+
+                    <div style="height:8px"></div>
+
+                    <div class="status-card"><div class="status-label">Current Turn</div><div class="status-value" id="turnStatus">Not Started</div></div>
+                    <div class="status-card"><div class="status-label">Board Heuristic</div><div class="status-value" id="heuristicValue" style="color:var(--yellow)">0.0</div></div>
+                    <div class="status-card"><div class="status-label">YOU (O) - 4-in-a-rows</div><div class="status-value" id="scoreHuman">0</div></div>
+                    <div class="status-card"><div class="status-label">AI (X) - 4-in-a-rows</div><div class="status-value" id="scoreAI">0</div></div>
+                    <div class="status-card"><div class="status-label">Winner</div><div class="status-value" id="winnerDisplay">—</div></div>
+                    <div class="status-card"><div class="status-label">Winner</div><div class="status-value" id="winnerDisplay">—</div></div>
+
+                    <div class="status-card"><div class="status-label">AI Stats</div><div id="aiStats" style="font-size:.88rem;color:var(--muted)">Waiting...</div></div>
+                </div>
+            </div>
+
+            <div class="card board-card" id="boardCard">
+                <div class="card-header">🎯 Game Board</div>
+                <div class="board-container">
+                    <div class="column-indicators" id="columnIndicators"></div>
+                    <div class="board-grid" id="boardGrid"></div>
+
+                    <div class="legend">
+                        <div class="legend-item"><div class="legend-disc human"></div><span>YOU (O)</span></div>
+                        <div class="legend-item"><div class="legend-disc ai"></div><span>AI (X)</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card tree-area" id="treeCard">
+                <div class="card-header">🌳 Minimax Tree</div>
+                <div class="tree-canvas-container" id="treeContainer">
+                    <div class="tree-legend" id="treeLegend">
+                        <div class="item"><span class="node-dot" style="background: linear-gradient(90deg,var(--blue),#8fd1ff)"></span> MAX</div>
+                        <div class="item"><span class="node-dot" style="background: linear-gradient(90deg,var(--pink),#ff92d6)"></span> MIN</div>
+                        <div class="item"><span class="node-dot" style="background: linear-gradient(90deg,var(--yellow),#ffe7a8)"></span> EXPECTED</div>
+                        <div class="item"><span class="node-dot" style="background: rgba(150,150,150,0.85)"></span> PRUNED</div>
+                    </div>
+
+                    <canvas id="treeCanvas"></canvas>
+                    <div class="tree-empty" id="treeEmpty">Make your first move to see the decision tree!</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="api-status" id="apiStatus">Connecting to Python backend...</div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <h2 style="color:var(--muted)">AI is thinking...</h2>
+        </div>
+    </div>
+
+    <div class="final-overlay" id="finalOverlay" role="dialog" aria-modal="true" aria-labelledby="finalTitle">
+        <div class="final-panel" id="finalPanel">
+            <div class="final-header">
+                <div class="final-title" id="finalTitle">Game Results</div>
+                <button class="final-close" id="finalCloseBtn" aria-label="Close results">✕</button>
+            </div>
+
+            <div class="final-body" id="finalBody">
+                <div class="final-card" id="finalWinnerCard">
+                    <div class="final-winner" id="finalWinnerText">—</div>
+                    <div class="final-score" id="finalWinnerNote">Winner</div>
+                </div>
+
+                <div class="final-card" id="finalScoreCard">
+                    <div style="font-weight:900;font-size:1.05rem">4-in-a-rows</div>
+                    <div style="display:flex;gap:12px;justify-content:center;margin-top:10px;align-items:center">
+                        <div style="text-align:center">
+                            <div style="font-size:1.1rem;font-weight:900;color:var(--pink)">YOU (O)</div>
+                            <div id="finalScoreO" style="font-size:1.6rem;font-weight:900">0</div>
+                        </div>
+                        <div style="text-align:center">
+                            <div style="font-size:1.1rem;font-weight:900;color:var(--blue)">AI (X)</div>
+                            <div id="finalScoreX" style="font-size:1.6rem;font-weight:900">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="final-card" id="finalInfoCard">
+                    <div style="font-weight:900;font-size:1.05rem">Game Status</div>
+                    <div id="finalReason" style="color:var(--muted);margin-top:8px;font-size:.95rem">Game ended</div>
+                </div>
+            </div>
+
+            <div class="final-actions">
+                <button class="btn-ghost" id="finalCloseKeepBtn">Close (keep board)</button>
+                <button class="btn-primary" id="finalResetBtn">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000';
+
+        let board = [];
+        let gameStarted = false;
+        let currentPlayer = 'O';
+        let algorithm = 'minimax';
+        let depth = 4;
+        let lastMove = null;
+        let currentGameResult = null;
+
+        const apiStatusEl = document.getElementById('apiStatus');
+        const loadingEl = document.getElementById('loadingOverlay');
+        const finalOverlay = document.getElementById('finalOverlay');
+
+        async function init(){
+            await checkAPIConnection();
+            createBoard();
+            setupEventListeners();
+            renderBoard();
+            updateScores();
+        }
+
+        async function checkAPIConnection(){
+            try {
+                const r = await fetch(`${API_URL}/health`);
+                if (r.ok) {
+                    apiStatusEl.textContent = '✓ Connected to Python backend';
+                    apiStatusEl.className = 'api-status connected';
+                } else {
+                    throw new Error('health endpoint not ok');
+                }
+            } catch (err) {
+                apiStatusEl.textContent = '✗ Python backend not running!';
+                apiStatusEl.className = 'api-status error';
+                console.warn('Backend unreachable:', err.message);
+            }
+        }
+
+        function createBoard(){
+            board = Array(6).fill(null).map(()=> Array(7).fill('.'));
+            currentGameResult = null;
+        }
+
+        function setupEventListeners(){
+            document.querySelectorAll('input[name="algorithm"]').forEach(radio=>{
+                radio.addEventListener('change', e=>{
+                    algorithm = e.target.value;
+                    document.querySelectorAll('.radio-option').forEach(opt=>opt.classList.remove('selected'));
+                    e.target.closest('.radio-option').classList.add('selected');
+                });
+            });
+
+            document.getElementById('depthSlider').addEventListener('input', e=>{
+                depth = parseInt(e.target.value,10);
+                document.getElementById('depthValue').textContent = depth;
+            });
+
+            document.getElementById('startBtn').addEventListener('click', startGame);
+            document.getElementById('resetBtn').addEventListener('click', resetGame);
+
+            document.getElementById('finalCloseBtn').addEventListener('click', ()=> hideFinalOverlay(false));
+            document.getElementById('finalCloseKeepBtn').addEventListener('click', ()=> hideFinalOverlay(false));
+            document.getElementById('finalResetBtn').addEventListener('click', ()=> { hideFinalOverlay(true); resetGame(); });
+        }
+
+        function renderBoard(){
+            const indicatorsDiv = document.getElementById('columnIndicators');
+            const boardDiv = document.getElementById('boardGrid');
+
+            indicatorsDiv.innerHTML = '';
+            for (let col=0; col<7; col++){
+                const indicator = document.createElement('div');
+                indicator.className = 'column-indicator';
+                indicator.id = `indicator-${col}`;
+                indicator.textContent = '▼';
+                indicatorsDiv.appendChild(indicator);
+            }
+
+            boardDiv.innerHTML = '';
+            for (let row=0; row<6; row++){
+                for (let col=0; col<7; col++){
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+
+                    if (gameStarted && currentPlayer === 'O' && !isGameOver()){
+                        cell.addEventListener('click', ()=> handleCellClick(col));
+                        cell.addEventListener('mouseenter', ()=> { if (isValidMove(col)) document.getElementById(`indicator-${col}`).classList.add('active'); });
+                        cell.addEventListener('mouseleave', ()=> { document.getElementById(`indicator-${col}`).classList.remove('active'); });
+                    }
+
+                    const piece = board[row][col];
+                    if (piece === 'O') cell.classList.add('filled','human');
+                    else if (piece === 'X') cell.classList.add('filled','ai');
+
+                    if (lastMove && lastMove.col === col){
+                        for (let r=5; r>=0; r--){
+                            if (board[r][col] !== '.'){
+                                if (r === row) cell.classList.add('last-move');
+                                break;
+                            }
+                        }
+                    }
+
+                    boardDiv.appendChild(cell);
+                }
+            }
+
+            updateStatus();
+            updateScores();
+        }
+
+        function isValidMove(col){ return board[0][col] === '.'; }
+
+        function makeMove(col, player){
+            for (let row=5; row>=0; row--){
+                if (board[row][col] === '.'){
+                    board[row][col] = player;
+                    return row;
+                }
+            }
+            return -1;
+        }
+
+        function isGameOver(){
+            return currentGameResult && currentGameResult.winner !== null;
+        }
+
+        async function handleCellClick(col){
+            if (!gameStarted || currentPlayer !== 'O' || !isValidMove(col) || isGameOver()) return;
+
+            makeMove(col,'O');
+            lastMove = { col, player: 'O' };
+            currentPlayer = 'X';
+            renderBoard();
+            
+            // Check if board is full after human move
+            if (isBoardFull()) {
+                // Need to get game result from backend
+                try {
+                    const res = await fetch(`${API_URL}/heuristic`, {
+                        method: 'POST',
+                        headers: {'Content-Type':'application/json'},
+                        body: JSON.stringify({ board: board })
+                    });
+                    const result = await res.json();
+                    if (result.gameResult) {
+                        currentGameResult = result.gameResult;
+                        renderBoard();
+                        if (currentGameResult.isGameOver) {
+                            setTimeout(() => {
+                                showFinalOverlay();
+                            }, 500);
+                            return;
+                        }
+                    }
+                } catch (err) {
+                    console.error('Error checking game result:', err);
+                }
+            }
+
+            setTimeout(()=> aiMove(), 200);
+        }
+        
+        function isBoardFull(){
+            return board.every(row => row.every(cell => cell !== '.'));
+        }
+
+        async function aiMove(){
+            loadingEl.classList.add('active');
+            try {
+                const res = await fetch(`${API_URL}/ai_move`, {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ board: board, algorithm: algorithm, depth: depth })
+                });
+                const result = await res.json();
+                loadingEl.classList.remove('active');
+
+                if (!result) {
+                    document.getElementById('aiStats').textContent = 'Invalid AI response';
+                    return;
+                }
+
+                // Update game result from backend
+                if (result.gameResult) {
+                    currentGameResult = result.gameResult;
+                }
+
+                // Update AI stats
+                document.getElementById('aiStats').innerHTML = `
+                    <strong>Col:</strong> ${result.move !== null && result.move !== undefined ? (result.move + 1) : '—'}<br>
+                    <strong>Score:</strong> ${typeof result.score === 'number' ? result.score.toFixed(2) : (result.score ?? '—')}<br>
+                    <strong>Time:</strong> ${result.time ?? 'N/A'}ms<br>
+                    <strong>Nodes:</strong> ${result.nodes ?? 'N/A'}
+                `;
+
+                // Draw tree
+                if (result.tree) drawTree(result.tree);
+
+                // Apply AI move
+                if (result.move !== null && result.move !== undefined){
+                    makeMove(result.move, 'X');
+                    lastMove = { col: result.move, player: 'X' };
+                }
+
+                currentPlayer = 'O';
+                renderBoard();
+
+                // Check if game is over after AI move
+                if (isGameOver()) {
+                    showFinalOverlay();
+                }
+            } catch (err) {
+                loadingEl.classList.remove('active');
+                alert('Error connecting to Python backend: ' + err.message);
+                console.error(err);
+            }
+        }
+
+        function updateScores(){
+            const result = currentGameResult || { x_fours: 0, o_fours: 0, winner: null };
+            
+            document.getElementById('scoreHuman').textContent = result.o_fours || 0;
+            document.getElementById('scoreAI').textContent = result.x_fours || 0;
+
+            const winnerDisplay = document.getElementById('winnerDisplay');
+            if (result.winner === 'O') { 
+                winnerDisplay.textContent = 'YOU (O)'; 
+                winnerDisplay.style.color = 'var(--pink)'; 
+            } else if (result.winner === 'X') { 
+                winnerDisplay.textContent = 'AI (X)'; 
+                winnerDisplay.style.color = 'var(--blue)'; 
+            } else if (result.winner === 'Draw') {
+                winnerDisplay.textContent = 'DRAW';
+                winnerDisplay.style.color = 'var(--yellow)';
+            } else if (result.winner === 'Both') {
+                winnerDisplay.textContent = 'BOTH';
+                winnerDisplay.style.color = 'var(--yellow)';
+            } else {
+                winnerDisplay.textContent = '—';
+                winnerDisplay.style.color = 'var(--white)';
+            }
+        }
+
+        function updateStatus(){
+            const turnStatus = document.getElementById('turnStatus');
+            if (!gameStarted) { 
+                turnStatus.textContent = 'Not Started'; 
+                turnStatus.style.color = 'var(--muted)'; 
+            } else if (currentPlayer === 'O') { 
+                turnStatus.textContent = 'YOUR TURN'; 
+                turnStatus.style.color = 'var(--pink)'; 
+            } else { 
+                turnStatus.textContent = 'AI TURN'; 
+                turnStatus.style.color = 'var(--blue)'; 
+            }
+        }
+
+        function startGame(){
+            createBoard();
+            gameStarted = true;
+            currentPlayer = 'O';
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('resetBtn').disabled = false;
+            document.querySelectorAll('input[name="algorithm"]').forEach(r=> r.disabled = true);
+            document.getElementById('depthSlider').disabled = true;
+            
+            const canvas = document.getElementById('treeCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx && ctx.clearRect(0,0,canvas.width,canvas.height);
+            canvas.style.display = 'none';
+            document.getElementById('treeEmpty').style.display = 'block';
+            
+            renderBoard();
+        }
+
+        function resetGame(){
+            createBoard();
+            gameStarted = false;
+            currentPlayer = 'O';
+            lastMove = null;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('resetBtn').disabled = true;
+            document.querySelectorAll('input[name="algorithm"]').forEach(r=> r.disabled = false);
+            document.getElementById('depthSlider').disabled = false;
+            document.getElementById('aiStats').textContent = 'Waiting...';
+            
+            hideFinalOverlay(false);
+            const canvas = document.getElementById('treeCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx && ctx.clearRect(0,0,canvas.width,canvas.height);
+            canvas.style.display = 'none';
+            document.getElementById('treeEmpty').style.display = 'block';
+            
+            updateScores();
+            renderBoard();
+        }
+
+        function showFinalOverlay(){
+            if (!currentGameResult) return;
+            
+            const result = currentGameResult;
+            
+            document.getElementById('finalScoreO').textContent = result.o_fours || 0;
+            document.getElementById('finalScoreX').textContent = result.x_fours || 0;
+            
+            const finalWinnerText = document.getElementById('finalWinnerText');
+            if (result.winner === 'O') {
+                finalWinnerText.textContent = 'YOU WIN! (O)';
+                finalWinnerText.style.background = 'linear-gradient(90deg,var(--pink),#ff92d6)';
+                finalWinnerText.style.webkitBackgroundClip = 'text';
+                finalWinnerText.style.webkitTextFillColor = 'transparent';
+            } else if (result.winner === 'X') {
+                finalWinnerText.textContent = 'AI WINS! (X)';
+                finalWinnerText.style.background = 'linear-gradient(90deg,var(--blue),#82c7ff)';
+                finalWinnerText.style.webkitBackgroundClip = 'text';
+                finalWinnerText.style.webkitTextFillColor = 'transparent';
+            } else if (result.winner === 'Draw') {
+                finalWinnerText.textContent = 'DRAW';
+                finalWinnerText.style.background = 'linear-gradient(90deg,var(--yellow),#ffe7a8)';
+                finalWinnerText.style.webkitBackgroundClip = 'text';
+                finalWinnerText.style.webkitTextFillColor = 'transparent';
+            } else if (result.winner === 'Tie') {
+                finalWinnerText.textContent = 'TIE';
+                finalWinnerText.style.background = 'linear-gradient(90deg,var(--yellow),#ffe7a8)';
+                finalWinnerText.style.webkitBackgroundClip = 'text';
+                finalWinnerText.style.webkitTextFillColor = 'transparent';
+            } else {
+                finalWinnerText.textContent = 'GAME OVER';
+                finalWinnerText.style.background = 'linear-gradient(90deg,var(--muted),#ccc)';
+                finalWinnerText.style.webkitBackgroundClip = 'text';
+                finalWinnerText.style.webkitTextFillColor = 'transparent';
+            }
+            
+            let reasonText = 'Game completed';
+            if (result.winner === 'O') reasonText = `You got ${result.o_fours} four-in-a-row${result.o_fours !== 1 ? 's' : ''}!`;
+            else if (result.winner === 'X') reasonText = `AI got ${result.x_fours} four-in-a-row${result.x_fours !== 1 ? 's' : ''}!`;
+            else if (result.winner === 'Draw') reasonText = 'Board is full with no winner';
+            else if (result.winner === 'Tie') reasonText = `Both players got ${result.x_fours} four-in-a-row${result.x_fours !== 1 ? 's' : ''} each`;
+            
+            document.getElementById('finalReason').textContent = reasonText;
+            
+            finalOverlay.style.display = 'flex';
+            gameStarted = false;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('resetBtn').disabled = false;
+        }
+
+        function hideFinalOverlay(resetAfterClose){
+            finalOverlay.style.display = 'none';
+        }
+
+        /* Tree drawing with scrollable centered canvas */
+        function drawTree(treeData){
+            const canvas = document.getElementById('treeCanvas');
+            const ctx = canvas.getContext('2d');
+            const container = document.getElementById('treeContainer');
+            
+            document.getElementById('treeEmpty').style.display = 'none';
+            canvas.style.display = 'block';
+            
+            const positions = [];
+            calculatePositions(treeData, 0, positions);
+            
+            // Find the bounds of the tree
+            const minX = Math.min(...positions.map(p=>p.x));
+            const maxX = Math.max(...positions.map(p=>p.x));
+            const minY = Math.min(...positions.map(p=>p.y));
+            const maxY = Math.max(...positions.map(p=>p.y));
+            
+            // Add generous padding around the tree
+            const padding = 200;
+            const treeWidth = maxX - minX + 2 * padding;
+            const treeHeight = maxY - minY + 2 * padding;
+            
+            // Set canvas size to accommodate the entire tree
+            canvas.width = Math.max(treeWidth, 1400);
+            canvas.height = Math.max(treeHeight, 900);
+            
+            // Shift all positions to ensure nothing is cut off
+            const offsetX = padding - minX;
+            const offsetY = padding - minY;
+            
+            // Adjust all positions
+            positions.forEach(pos => {
+                pos.x += offsetX;
+                pos.y += offsetY;
+            });
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.lineCap = 'round';
+            
+            // Draw edges first
+            positions.forEach(pos => {
+                if (pos.parent) {
+                    const isPruned = pos.node.type === 'PRUNED' || pos.node.pruned === true;
+                    drawEdge(ctx, pos.parent.x, pos.parent.y, pos.x, pos.y, isPruned, pos.node.probability);
+                }
+            });
+            
+            // Draw nodes
+            positions.forEach(pos => drawNode(ctx, pos.x, pos.y, pos.node));
+            
+            // Center the canvas in the container view
+            setTimeout(() => {
+                // Find root position and center on it
+                const rootPos = positions[0];
+                if (rootPos) {
+                    container.scrollLeft = rootPos.x - container.clientWidth / 2;
+                    container.scrollTop = 0;
+                } else {
+                    container.scrollLeft = (canvas.width - container.clientWidth) / 2;
+                    container.scrollTop = 0;
+                }
+            }, 10);
+        }
+
+        function calculatePositions(node, level, positions, parent=null, baseX=0, offsetX=0){
+            const LEVEL_HEIGHT = 100;
+            const NODE_SPACING = 120;
+            const y = 60 + level * LEVEL_HEIGHT;
+            let x = baseX;
+            
+            if (parent) {
+                // Position children relative to parent
+                const siblings = parent.node.children || [];
+                const siblingIndex = siblings.indexOf(node);
+                const totalWidth = (siblings.length - 1) * NODE_SPACING;
+                x = parent.x - totalWidth / 2 + siblingIndex * NODE_SPACING;
+            }
+            
+            const pos = { x, y, node, parent };
+            positions.push(pos);
+            
+            if (node.children && node.children.length > 0){
+                node.children.forEach(child => calculatePositions(child, level + 1, positions, pos, x, 0));
+            }
+        }
+
+        function drawEdge(ctx, x1, y1, x2, y2, isPruned, probability){
+            ctx.beginPath();
+            ctx.moveTo(x1, y1 + 28);
+            ctx.lineTo(x2, y2 - 28);
+            ctx.strokeStyle = isPruned ? 'rgba(150,150,150,0.35)' : 'rgba(160,180,200,0.9)';
+            ctx.lineWidth = isPruned ? 1 : 2;
+            ctx.setLineDash(isPruned ? [6,6] : []);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Draw probability on edge for EXPECTED nodes
+            if (probability !== undefined && probability !== null) {
+                const midX = (x1 + x2) / 2;
+                const midY = (y1 + y2) / 2;
+                ctx.fillStyle = 'rgba(255,209,102,0.9)';
+                ctx.font = '600 10px system-ui, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(`p=${probability.toFixed(2)}`, midX, midY);
+            }
+        }
+
+        function drawNode(ctx, x, y, node){
+            const radius = 28;
+            let fillColor = '#1f2d3a';
+            let textColor = '#fff';
+            const type = (node.type || '').toUpperCase();
+            
+            if (type === 'MAX'){ 
+                fillColor = 'rgba(77,163,255,0.95)'; 
+                textColor = '#071028'; 
+            } else if (type === 'MIN'){ 
+                fillColor = 'rgba(255,107,203,0.95)'; 
+                textColor = '#071028'; 
+            } else if (type === 'CHANCE' || type === 'EXPECT' || type === 'EXPECTED'){ 
+                fillColor = 'rgba(255,209,102,0.95)'; 
+                textColor = '#071028'; 
+            } else if (type === 'PRUNED' || node.pruned === true){ 
+                fillColor = 'rgba(120,120,120,0.85)'; 
+                textColor = '#e9e9e9'; 
+            } else if (type === 'LEAF') {
+                fillColor = 'rgba(100,100,100,0.9)';
+                textColor = '#fff';
+            }
+
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = fillColor; 
+            ctx.fill();
+            ctx.lineWidth = 2; 
+            ctx.strokeStyle = 'rgba(255,255,255,0.12)'; 
+            ctx.stroke();
+
+            // Draw label
+            if (node.label || type){
+                ctx.fillStyle = 'rgba(255,255,255,0.92)';
+                ctx.font = '700 11px system-ui, sans-serif';
+                ctx.textAlign = 'center';
+                const labelText = (node.label ? node.label : '') + (type && type !== 'LEAF' ? (node.label ? ' · ' + type : type) : '');
+                ctx.fillText(labelText, x, y - radius - 12);
+            }
+
+            // Draw score
+            const scoreValue = node.value !== undefined && node.value !== null ? node.value : node.score;
+            if (scoreValue !== undefined && scoreValue !== null){
+                ctx.fillStyle = textColor;
+                ctx.font = '700 13px system-ui, sans-serif';
+                ctx.textAlign = 'center'; 
+                ctx.textBaseline = 'middle';
+                const scoreText = typeof scoreValue === 'number' ? scoreValue.toFixed(1) : scoreValue;
+                ctx.fillText(scoreText, x, y);
+            }
+
+            // Draw game result for leaf nodes
+            if (type === 'LEAF' && node.gameResult) {
+                const gr = node.gameResult;
+                ctx.fillStyle = 'rgba(255,255,255,0.85)';
+                ctx.font = '600 9px system-ui, sans-serif';
+                ctx.textAlign = 'center';
+                let resultLine1 = `O:${gr.o_fours} X:${gr.x_fours}`;
+                let resultLine2 = gr.winner ? `W:${gr.winner}` : '';
+                ctx.fillText(resultLine1, x, y + radius + 14);
+                if (resultLine2) {
+                    ctx.fillText(resultLine2, x, y + radius + 26);
+                }
+            }
+
+            // Draw alpha-beta values if present
+            const alpha = node.alpha !== undefined && node.alpha !== null ? node.alpha : null;
+            const beta = node.beta !== undefined && node.beta !== null ? node.beta : null;
+            if (alpha !== null || beta !== null){
+                ctx.fillStyle = 'rgba(240,240,240,0.9)'; 
+                ctx.font = '600 10px system-ui, sans-serif'; 
+                ctx.textAlign = 'center';
+                const aText = alpha !== null ? `α:${(typeof alpha === 'number' ? alpha.toFixed(2) : alpha)}` : '';
+                const bText = beta !== null ? `β:${(typeof beta === 'number' ? beta.toFixed(2) : beta)}` : '';
+                const both = (aText && bText);
+                const extraOffset = (type === 'LEAF' && node.gameResult) ? 16 : 0;
+                ctx.fillText(both ? (aText + '  ' + bText) : (aText || bText), x, y + radius + 12 + extraOffset);
+            }
+
+            // Draw X for pruned nodes
+            if (type === 'PRUNED' || node.pruned === true){
+                ctx.strokeStyle = 'rgba(255,255,255,0.6)'; 
+                ctx.lineWidth = 2;
+                ctx.beginPath(); 
+                ctx.moveTo(x - 12, y - 12); 
+                ctx.lineTo(x + 12, y + 12); 
+                ctx.moveTo(x + 12, y - 12); 
+                ctx.lineTo(x - 12, y + 12); 
+                ctx.stroke();
+            }
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
