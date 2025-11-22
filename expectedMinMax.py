@@ -31,7 +31,7 @@ def _chance_outcomes_for_choice(board, chosen_col):
 
 
 def max_value_expected(board, depth):
-    if depth == K or is_full(board):
+    if depth == 0 or is_full(board):
         return heuristic(board)
 
     v = -float('inf')
@@ -42,7 +42,7 @@ def max_value_expected(board, depth):
         expected_score = 0.0
         for actual_col, prob in outcomes:
             child = move_to(board, actual_col, AI)
-            expected_score += prob * min_value_expected(child, depth + 1)
+            expected_score += prob * min_value_expected(child, depth - 1)
 
         v = max(v, expected_score)
 
@@ -51,19 +51,26 @@ def max_value_expected(board, depth):
 
 def min_value_expected(board, depth):
 
-    if depth == K or is_full(board):
+    if depth == 0 or is_full(board):
         return heuristic(board)
 
     v = float('inf')
 
     for col in get_valid_moves(board):
-        child = move_to(board, col, HUMAN)
-        v = min(v, max_value_expected(child, depth + 1))
+        outcomes = _chance_outcomes_for_choice(board, col)
+        expected_score = 0.0
+        for actual_col, prob in outcomes:
+            child = move_to(board, actual_col, HUMAN)
+            expected_score += prob * max_value_expected(child, depth - 1)
+
+        v = min(v, expected_score)
+       
 
     return v
 
 
-def choose_move_expected(board):
+def choose_move_expected(board, depth=K):
+ 
     valid = get_valid_moves(board)
     if not valid:
         return None, heuristic(board)
@@ -77,7 +84,7 @@ def choose_move_expected(board):
         expected = 0.0
         for actual_col, prob in outcomes:
             child = move_to(board, actual_col, AI)
-            expected += prob * min_value_expected(child, 1)
+            expected += prob * min_value_expected(child, depth - 1)
 
         
         if best_col is None or expected > best_val or \
@@ -97,9 +104,3 @@ if __name__ == "__main__":
     b = move_to(b, 3, AI)
     b = move_to(b, 4, AI)
 
-    print("Board:")
-    print_board(b)
-    print("Heuristic =", heuristic(b))
-
-    best_col, best_val = choose_move_expected(b)
-    print("AI chooses column:", best_col, "expected:", best_val)
