@@ -154,6 +154,7 @@
     <div class="container">
         <div class="header">
             <h1>🎮 CONNECT 4 AI</h1>
+            <p>Score = Number of 4-in-a-rows</p>
         </div>
 
         <div class="main-grid">
@@ -199,11 +200,11 @@
 
                             <div style="display:flex;gap:12px">
                                 <div style="flex:1">
-                                    <div class="status-label">Score — YOU (O)</div>
+                                    <div class="status-label">4-in-rows — YOU (O)</div>
                                     <div class="status-value" id="scoreHuman">0</div>
                                 </div>
                                 <div style="flex:1">
-                                    <div class="status-label">Score — AI (X)</div>
+                                    <div class="status-label">4-in-rows — AI (X)</div>
                                     <div class="status-value" id="scoreAI">0</div>
                                 </div>
                             </div>
@@ -248,25 +249,11 @@
                             <label style="font-size:.85rem;color:var(--muted);font-weight:700">Zoom</label>
                             <input id="treeZoom" type="range" min="0.5" max="4" step="0.1" value="1" style="flex:1">
                             <div id="treeZoomVal" style="min-width:40px;text-align:center;color:var(--muted);font-weight:700">1.0x</div>
-                            <button id="zoomToFillBtn" style="margin-left:8px;padding:6px 8px;border-radius:8px;border:none;background:linear-gradient(90deg,var(--blue),#82c7ff);color:#071028;font-weight:800;cursor:pointer">Zoom to fill</button>
                         </div>
                     </div>
 
-                    <div id="treeDebug" style="position:absolute;right:12px;bottom:12px;background:rgba(2,6,23,0.85);color:var(--muted);padding:8px;border-radius:8px;font-size:.85rem;border:1px solid rgba(255,255,255,0.02);z-index:11;max-width:320px;display:none"></div>
-
                     <canvas id="treeCanvas"></canvas>
                     <div class="tree-empty" id="treeEmpty">Make your first move to see the decision tree!</div>
-                </div>
-            </div>
-
-            <!-- Fullscreen tree overlay -->
-            <div id="treeFullscreen" style="display:none;position:fixed;inset:0;background:rgba(3,6,15,0.95);z-index:3000;align-items:center;justify-content:center;padding:18px">
-                <div style="width:100%;height:100%;position:relative;">
-                    <button id="closeTreeFullBtn" style="position:absolute;right:18px;top:18px;z-index:3010;padding:10px 14px;border-radius:8px;border:none;background:linear-gradient(90deg,var(--pink),var(--yellow));font-weight:900;cursor:pointer">Close</button>
-                    <div style="position:absolute;left:18px;top:18px;z-index:3010;color:var(--muted)">Full-size Decision Tree</div>
-                    <div style="position:absolute;inset:80px;overflow:auto;padding:12px">
-                        <canvas id="treeCanvasFull" style="display:block;margin:0 auto;background:transparent;" ></canvas>
-                    </div>
                 </div>
             </div>
         </div>
@@ -281,22 +268,22 @@
         </div>
     </div>
 
-    <div class="final-overlay" id="finalOverlay" role="dialog" aria-modal="true" aria-labelledby="finalTitle">
-        <div class="final-panel" id="finalPanel">
+    <div class="final-overlay" id="finalOverlay">
+        <div class="final-panel">
             <div class="final-header">
-                <div class="final-title" id="finalTitle">🏆 Game Over!</div>
-                <button class="final-close" id="finalCloseBtn" aria-label="Close results">✕</button>
+                <div class="final-title">🏆 Game Over!</div>
+                <button class="final-close" id="finalCloseBtn">✕</button>
             </div>
 
-            <div class="final-body" id="finalBody">
-                <div class="final-card" id="finalWinnerCard">
+            <div class="final-body">
+                <div class="final-card">
                     <div class="final-winner" id="finalWinnerText">—</div>
-                    <div class="final-score" id="finalWinnerNote">Winner</div>
+                    <div class="final-score">Winner</div>
                 </div>
 
-                <div class="final-card" id="finalScoreCard">
-                    <div style="font-weight:900;font-size:1.05rem">Final Score</div>
-                    <div style="display:flex;gap:12px;justify-content:center;margin-top:10px;align-items:center">
+                <div class="final-card">
+                    <div style="font-weight:900;font-size:1.05rem">Final Score (4-in-a-rows)</div>
+                    <div style="display:flex;gap:12px;justify-content:center;margin-top:10px">
                         <div style="text-align:center">
                             <div style="font-size:1.1rem;font-weight:900;color:var(--pink)">YOU (O)</div>
                             <div id="finalScoreO" style="font-size:1.6rem;font-weight:900">0</div>
@@ -308,7 +295,7 @@
                     </div>
                 </div>
 
-                <div class="final-card" id="finalInfoCard">
+                <div class="final-card">
                     <div style="font-weight:900;font-size:1.05rem">How the game ended</div>
                     <div id="finalReason" style="color:var(--muted);margin-top:8px;font-size:.95rem">—</div>
                 </div>
@@ -323,68 +310,36 @@
 
     <script>
         const API_URL = 'http://localhost:5000';
-
-        let board = [];
-        let gameStarted = false;
-        let currentPlayer = 'O';
-        let algorithm = 'minimax';
-        let depth = 4;
-        let lastMove = null;
-        let finalScores = null;
-        let finalWinner = null;
-        let finalReason = '';
-
-        const apiStatusEl = document.getElementById('apiStatus');
-        const loadingEl = document.getElementById('loadingOverlay');
-        const finalOverlay = document.getElementById('finalOverlay');
-        const finalWinnerText = document.getElementById('finalWinnerText');
-        const finalScoreO = document.getElementById('finalScoreO');
-        const finalScoreX = document.getElementById('finalScoreX');
-        const finalReasonEl = document.getElementById('finalReason');
-
-        // Tree drawing constants (increased for better visibility)
-        let NODE_RADIUS = 60;
-        let LEVEL_HEIGHT = 220;
-        let MIN_NODE_SPACING = 220;
-        let PADDING = 80;
-
-        // Last drawn tree + user zoom
-        let lastTreeData = null;
-        let userZoom = 1.0;
-        let initialSummaryHTML = null;
+        let board, gameStarted, currentPlayer, algorithm, depth, lastMove, finalScores, finalWinner, finalReason;
+        let NODE_RADIUS = 60, LEVEL_HEIGHT = 220, MIN_NODE_SPACING = 220, PADDING = 80;
+        let lastTreeData = null, userZoom = 1.0, initialSummaryHTML = null;
 
         async function init(){
             await checkAPIConnection();
             createBoard();
             setupEventListeners();
             renderBoard();
-            // capture the initial summary card HTML so we can restore it on reset
-            const summary = document.getElementById('summaryCard');
-            if (summary) initialSummaryHTML = summary.innerHTML;
-            updateScores();
+            initialSummaryHTML = document.getElementById('summaryCard').innerHTML;
+            await updateScores();
         }
 
         async function checkAPIConnection(){
             try {
                 const r = await fetch(`${API_URL}/health`);
                 if (r.ok) {
-                    apiStatusEl.textContent = '✓ Connected to Python backend';
-                    apiStatusEl.className = 'api-status connected';
-                } else {
-                    throw new Error('health endpoint not ok');
-                }
+                    document.getElementById('apiStatus').textContent = '✓ Connected';
+                    document.getElementById('apiStatus').className = 'api-status connected';
+                } else throw new Error('not ok');
             } catch (err) {
-                apiStatusEl.textContent = '✗ Python backend not running!';
-                apiStatusEl.className = 'api-status error';
-                console.warn('Backend unreachable:', err.message);
+                document.getElementById('apiStatus').textContent = '✗ Backend not running!';
+                document.getElementById('apiStatus').className = 'api-status error';
             }
         }
 
         function createBoard(){
             board = Array(6).fill(null).map(()=> Array(7).fill('.'));
-            finalScores = null;
-            finalWinner = null;
-            finalReason = '';
+            gameStarted = false; currentPlayer = 'O'; algorithm = 'minimax'; depth = 4;
+            lastMove = null; finalScores = null; finalWinner = null; finalReason = '';
         }
 
         function setupEventListeners(){
@@ -395,167 +350,47 @@
                     e.target.closest('.radio-option').classList.add('selected');
                 });
             });
-
             document.getElementById('depthSlider').addEventListener('input', e=>{
                 depth = parseInt(e.target.value,10);
                 document.getElementById('depthValue').textContent = depth;
             });
-
             document.getElementById('startBtn').addEventListener('click', startGame);
             document.getElementById('resetBtn').addEventListener('click', resetGame);
-
-            document.getElementById('finalCloseBtn').addEventListener('click', ()=> hideFinalOverlay(false));
-            document.getElementById('finalCloseKeepBtn').addEventListener('click', ()=> hideFinalOverlay(false));
-            document.getElementById('finalResetBtn').addEventListener('click', ()=> { hideFinalOverlay(true); resetGame(); });
-
-            // Fullscreen visualize button
-            const openBtn = document.getElementById('openTreeBtn');
-            if (openBtn) openBtn.addEventListener('click', ()=>{
-                const fs = document.getElementById('treeFullscreen');
-                if (!fs) return;
-                fs.style.display = 'flex';
-
-                // If we have the full tree data, draw the full visualization after layout.
-                if (lastTreeData) {
-                    requestAnimationFrame(()=> requestAnimationFrame(()=> drawTreeFull(lastTreeData)));
-                    return;
-                }
-
-                // Otherwise try to copy whatever is currently rendered in the small canvas
-                // into the fullscreen canvas so users still see something useful.
-                const src = document.getElementById('treeCanvas');
-                const dest = document.getElementById('treeCanvasFull');
-                const wrapper = dest && dest.parentElement;
-
-                if (src && dest && src.style.display !== 'none' && src.width > 0 && src.height > 0) {
-                    // copy the existing buffer image into the fullscreen canvas
-                    dest.width = src.width;
-                    dest.height = src.height;
-                    const dctx = dest.getContext('2d');
-                    dctx.clearRect(0,0,dest.width,dest.height);
-                    dctx.drawImage(src, 0, 0);
-
-                    // apply a fit transform once the wrapper is laid out
-                    requestAnimationFrame(()=> requestAnimationFrame(()=> {
-                        if (!wrapper) return;
-                        const availW = wrapper.clientWidth || 1;
-                        const availH = wrapper.clientHeight || 1;
-                        const fitScale = Math.min(availW / dest.width, availH / dest.height, 2.5);
-                        dest.style.transformOrigin = '50% 0';
-                        dest.style.transform = `scale(${fitScale})`;
-                        dest.style.width = dest.width + 'px';
-                        dest.style.height = dest.height + 'px';
-                    }));
-
-                    return;
-                }
-
-                // No tree available at all — draw a helpful message in the fullscreen canvas
-                if (dest && wrapper) {
-                    const w = Math.max(800, Math.floor(wrapper.clientWidth * 0.8) || 800);
-                    const h = Math.max(240, Math.floor(wrapper.clientHeight * 0.4) || 240);
-                    dest.width = w; dest.height = h;
-                    const dctx = dest.getContext('2d');
-                    dctx.clearRect(0,0,w,h);
-                    dctx.fillStyle = 'rgba(255,255,255,0.06)';
-                    dctx.fillRect(0,0,w,h);
-                    dctx.fillStyle = '#cfe9ff';
-                    dctx.textAlign = 'center';
-                    dctx.font = 'bold 20px system-ui';
-                    dctx.fillText('No decision tree available', w/2, h/2 - 6);
-                    dctx.font = '14px system-ui';
-                    dctx.fillStyle = '#9aa6b2';
-                    dctx.fillText('Make a move or run the AI to generate the tree', w/2, h/2 + 22);
-
-                    requestAnimationFrame(()=> requestAnimationFrame(()=> {
-                        const availW = wrapper.clientWidth || 1;
-                        const availH = wrapper.clientHeight || 1;
-                        const fitScale = Math.min(availW / dest.width, availH / dest.height, 2.5);
-                        dest.style.transformOrigin = '50% 0';
-                        dest.style.transform = `scale(${fitScale})`;
-                        dest.style.width = dest.width + 'px';
-                        dest.style.height = dest.height + 'px';
-                    }));
-                }
+            document.getElementById('finalCloseBtn').addEventListener('click', ()=> document.getElementById('finalOverlay').style.display = 'none');
+            document.getElementById('finalCloseKeepBtn').addEventListener('click', ()=> document.getElementById('finalOverlay').style.display = 'none');
+            document.getElementById('finalResetBtn').addEventListener('click', ()=> { document.getElementById('finalOverlay').style.display = 'none'; resetGame(); });
+            
+            document.getElementById('treeZoom')?.addEventListener('input', (e)=>{
+                userZoom = parseFloat(e.target.value) || 1.0;
+                document.getElementById('treeZoomVal').textContent = userZoom.toFixed(1) + 'x';
+                if (lastTreeData) drawTree(lastTreeData);
             });
-
-            const closeBtn = document.getElementById('closeTreeFullBtn');
-            if (closeBtn) closeBtn.addEventListener('click', ()=>{
-                const fs = document.getElementById('treeFullscreen');
-                if (fs) fs.style.display = 'none';
-            });
-
-            // Zoom control (redraw last tree when changed)
-            const zoomEl = document.getElementById('treeZoom');
-            const zoomVal = document.getElementById('treeZoomVal');
-            if (zoomEl){
-                zoomEl.addEventListener('input', (e)=>{
-                    userZoom = parseFloat(e.target.value) || 1.0;
-                    if (zoomVal) zoomVal.textContent = userZoom.toFixed(1) + 'x';
-                    if (lastTreeData) drawTree(lastTreeData);
-                });
-            }
-
-            // Zoom-to-fill button handler
-            const zoomToFillBtn = document.getElementById('zoomToFillBtn');
-            if (zoomToFillBtn){
-                zoomToFillBtn.addEventListener('click', ()=>{
-                    const canvas = document.getElementById('treeCanvas');
-                    const container = document.getElementById('treeContainer');
-                    if (!canvas || !container || !lastTreeData) {
-                        // nothing to do
-                        return;
-                    }
-
-                    // canvas.width is the logical renderWidth used by drawTree
-                    const renderWidth = canvas.width || canvas.getBoundingClientRect().width;
-                    const containerWidth = Math.max(1, container.clientWidth - 24);
-                    const baseFit = containerWidth / renderWidth;
-
-                    // compute desired zoom so baseFit * userZoom ~ 1.0 (fill)
-                    let desiredZoom = 1.0 / Math.max(1e-6, baseFit);
-                    // clamp to slider bounds
-                    desiredZoom = Math.min(parseFloat(zoomEl.max || 4), Math.max(parseFloat(zoomEl.min || 0.5), desiredZoom));
-
-                    userZoom = desiredZoom;
-                    if (zoomEl) { zoomEl.value = String(userZoom); }
-                    if (zoomVal) zoomVal.textContent = userZoom.toFixed(1) + 'x';
-                    drawTree(lastTreeData);
-                });
-            }
         }
 
         function renderBoard(){
             const indicatorsDiv = document.getElementById('columnIndicators');
             const boardDiv = document.getElementById('boardGrid');
-
             indicatorsDiv.innerHTML = '';
             for (let col=0; col<7; col++){
-                const indicator = document.createElement('div');
-                indicator.className = 'column-indicator';
-                indicator.id = `indicator-${col}`;
-                indicator.textContent = '▼';
-                indicatorsDiv.appendChild(indicator);
+                const ind = document.createElement('div');
+                ind.className = 'column-indicator';
+                ind.id = `indicator-${col}`;
+                ind.textContent = '▼';
+                indicatorsDiv.appendChild(ind);
             }
-
             boardDiv.innerHTML = '';
             for (let row=0; row<6; row++){
                 for (let col=0; col<7; col++){
                     const cell = document.createElement('div');
                     cell.className = 'cell';
-                    cell.dataset.row = row;
-                    cell.dataset.col = col;
-
                     if (gameStarted && currentPlayer === 'O' && !isGameOverFromBackend()){
                         cell.addEventListener('click', ()=> handleCellClick(col));
                         cell.addEventListener('mouseenter', ()=> { if (isValidMove(col)) document.getElementById(`indicator-${col}`).classList.add('active'); });
                         cell.addEventListener('mouseleave', ()=> { document.getElementById(`indicator-${col}`).classList.remove('active'); });
                     }
-
                     const piece = board[row][col];
                     if (piece === 'O') cell.classList.add('filled','human');
                     else if (piece === 'X') cell.classList.add('filled','ai');
-
                     if (lastMove && lastMove.col === col){
                         for (let r=5; r>=0; r--){
                             if (board[r][col] !== '.'){
@@ -564,17 +399,14 @@
                             }
                         }
                     }
-
                     boardDiv.appendChild(cell);
                 }
             }
-
             updateStatus();
             updateScores();
         }
 
         function isValidMove(col){ return board[0][col] === '.'; }
-
         function makeMove(col, player){
             for (let row=5; row>=0; row--){
                 if (board[row][col] === '.'){
@@ -584,51 +416,47 @@
             }
             return -1;
         }
-
-        function isGameOverFromBackend(){
-            return finalScores !== null || finalWinner !== null || finalReason !== '';
-        }
+        function isGameOverFromBackend(){ return finalScores !== null || finalWinner !== null || finalReason !== ''; }
 
         async function handleCellClick(col){
             if (!gameStarted || currentPlayer !== 'O' || !isValidMove(col) || isGameOverFromBackend()) return;
-
             makeMove(col,'O');
             lastMove = { col, player: 'O' };
             currentPlayer = 'X';
             renderBoard();
-
+            await updateScores();
             setTimeout(()=> aiMove(), 200);
         }
 
         async function aiMove(){
-            loadingEl.classList.add('active');
+            document.getElementById('loadingOverlay').classList.add('active');
             try {
                 const res = await fetch(`${API_URL}/ai_move`, {
                     method: 'POST',
                     headers: {'Content-Type':'application/json'},
-                    body: JSON.stringify({ board: board, algorithm: algorithm, depth: depth })
+                    body: JSON.stringify({ board, algorithm, depth })
                 });
                 const result = await res.json();
-                loadingEl.classList.remove('active');
+                document.getElementById('loadingOverlay').classList.remove('active');
 
                 if (!result) {
-                    document.getElementById('aiStats').textContent = 'Invalid AI response';
+                    document.getElementById('aiStats').textContent = 'Invalid response';
                     return;
                 }
 
-                document.getElementById('aiStats').innerHTML = `
-                    <strong>Col:</strong> ${result.move !== null && result.move !== undefined ? (result.move + 1) : '—'}<br>
-                    <strong>Score:</strong> ${typeof result.score === 'number' ? result.score.toFixed(2) : (result.score ?? '—')}<br>
-                    <strong>Time:</strong> ${result.time ?? 'N/A'}ms<br>
-                    <strong>Nodes:</strong> ${result.nodes ?? 'N/A'}
-                `;
+                if (result.current_scores) {
+                    document.getElementById('scoreHuman').textContent = result.current_scores.O || 0;
+                    document.getElementById('scoreAI').textContent = result.current_scores.X || 0;
+                }
+                if (typeof result.current_heuristic === 'number') {
+                    document.getElementById('heuristicValue').textContent = result.current_heuristic.toFixed(2);
+                }
+
+                document.getElementById('aiStats').innerHTML = `<strong>Col:</strong> ${result.move !== null ? (result.move + 1) : '—'}<br><strong>Score:</strong> ${typeof result.score === 'number' ? result.score.toFixed(2) : '—'}<br><strong>Time:</strong> ${result.time ?? 'N/A'}ms<br><strong>Nodes:</strong> ${result.nodes ?? 'N/A'}`;
 
                 if (result.tree) {
-                    lastTreeData = result.tree; // keep consistent name used elsewhere
-                    console.info('Received tree from backend, drawing...');
+                    lastTreeData = result.tree;
                     drawTree(result.tree);
-                    // If fullscreen is open, also draw there
-                    if (document.getElementById('treeFullscreen').style.display === 'flex') drawTreeFull(result.tree);
                 }
 
                 if (result.move !== null && result.move !== undefined){
@@ -643,89 +471,67 @@
                 }
 
                 renderBoard();
+                await updateScores();
             } catch (err) {
-                loadingEl.classList.remove('active');
-                alert('Error connecting to Python backend: ' + err.message);
-                console.error(err);
+                document.getElementById('loadingOverlay').classList.remove('active');
+                alert('Backend error: ' + err.message);
             }
         }
 
         function applyBackendFinalState(result){
-            finalScores = result.final_scores ?? computePieceCounts(board);
-            finalWinner = ('winner' in result) ? result.winner : inferWinnerFromFinalScores(finalScores);
-            finalReason = result.reason ?? (result.game_over ? 'Backend stopped the game' : '');
-
+            finalScores = result.final_scores;
+            finalWinner = result.winner;
+            finalReason = result.reason || '';
             gameStarted = false;
 
-            updateScores();
-
-            finalScoreO.textContent = finalScores.O ?? 0;
-            finalScoreX.textContent = finalScores.X ?? 0;
+            document.getElementById('finalScoreO').textContent = finalScores.O ?? 0;
+            document.getElementById('finalScoreX').textContent = finalScores.X ?? 0;
+            
+            const winText = document.getElementById('finalWinnerText');
             if (finalWinner === 'O') {
-                finalWinnerText.textContent = 'YOU WIN! 🎉';
-                finalWinnerText.style.background = 'linear-gradient(90deg,var(--pink),#ff92d6)';
-                finalWinnerText.style.webkitBackgroundClip = 'text';
-                finalWinnerText.style.webkitTextFillColor = 'transparent';
+                winText.textContent = 'YOU WIN! 🎉';
+                winText.style.background = 'linear-gradient(90deg,var(--pink),#ff92d6)';
             } else if (finalWinner === 'X') {
-                finalWinnerText.textContent = 'AI WINS 🤖';
-                finalWinnerText.style.background = 'linear-gradient(90deg,var(--blue),#82c7ff)';
-                finalWinnerText.style.webkitBackgroundClip = 'text';
-                finalWinnerText.style.webkitTextFillColor = 'transparent';
+                winText.textContent = 'AI WINS 🤖';
+                winText.style.background = 'linear-gradient(90deg,var(--blue),#82c7ff)';
             } else {
-                finalWinnerText.textContent = 'TIE GAME 🤝';
-                finalWinnerText.style.background = 'linear-gradient(90deg,var(--yellow),#ffe7a8)';
-                finalWinnerText.style.webkitBackgroundClip = 'text';
-                finalWinnerText.style.webkitTextFillColor = 'transparent';
+                winText.textContent = 'TIE GAME 🤝';
+                winText.style.background = 'linear-gradient(90deg,var(--yellow),#ffe7a8)';
             }
-            finalReasonEl.textContent = finalReason || 'Game ended';
+            winText.style.webkitBackgroundClip = 'text';
+            winText.style.webkitTextFillColor = 'transparent';
+            
+            document.getElementById('finalReason').textContent = finalReason;
 
-            // Replace the left summary card content with a compact final-summary
-            // so final results are visible inline without needing the overlay.
             const summaryCard = document.getElementById('summaryCard');
-            if (summaryCard) {
-                const winnerLabel = finalWinner === 'O' ? 'YOU (O) WIN' : finalWinner === 'X' ? 'AI (X) WINS' : 'TIE GAME';
-                summaryCard.innerHTML = `
-                    <div style="display:flex;flex-direction:column;gap:8px">
-                        <div style="font-weight:900;font-size:1.05rem;color:var(--muted)">${winnerLabel}</div>
-                        <div style="display:flex;gap:12px">
-                            <div style="flex:1"><div class="status-label">YOU (O)</div><div class="status-value">${finalScores.O ?? 0}</div></div>
-                            <div style="flex:1"><div class="status-label">AI (X)</div><div class="status-value">${finalScores.X ?? 0}</div></div>
-                        </div>
-                        <div style="color:var(--muted);font-size:.9rem">${finalReason || ''}</div>
-                    </div>
-                `;
-            }
+            const winnerLabel = finalWinner === 'O' ? 'YOU (O) WIN' : finalWinner === 'X' ? 'AI (X) WINS' : 'TIE GAME';
+            summaryCard.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px"><div style="font-weight:900;font-size:1.05rem;color:var(--muted)">${winnerLabel}</div><div style="display:flex;gap:12px"><div style="flex:1"><div class="status-label">YOU (O)</div><div class="status-value">${finalScores.O ?? 0}</div></div><div style="flex:1"><div class="status-label">AI (X)</div><div class="status-value">${finalScores.X ?? 0}</div></div></div><div style="color:var(--muted);font-size:.9rem">${finalReason}</div></div>`;
 
-            // Still show the final overlay dialog as well (user can close it)
-            showFinalOverlay();
+            document.getElementById('finalOverlay').style.display = 'flex';
             document.getElementById('startBtn').disabled = false;
             document.getElementById('resetBtn').disabled = false;
             document.querySelectorAll('input[name="algorithm"]').forEach(r=> r.disabled = false);
             document.getElementById('depthSlider').disabled = false;
         }
 
-        function computePieceCounts(bd){
-            let o=0,x=0;
-            for (let r=0; r<6; r++){
-                for (let c=0; c<7; c++){
-                    if (bd[r][c] === 'O') o++;
-                    if (bd[r][c] === 'X') x++;
+        async function updateScores(){
+            try {
+                const res = await fetch(`${API_URL}/heuristic`, {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ board })
+                });
+                const data = await res.json();
+                if (data.scores) {
+                    document.getElementById('scoreHuman').textContent = data.scores.O || 0;
+                    document.getElementById('scoreAI').textContent = data.scores.X || 0;
                 }
+                if (typeof data.heuristic === 'number') {
+                    document.getElementById('heuristicValue').textContent = data.heuristic.toFixed(2);
+                }
+            } catch (err) {
+                console.error('Error updating scores:', err);
             }
-            return {O:o,X:x};
-        }
-
-        function inferWinnerFromFinalScores(scores){
-            if (scores.O > scores.X) return 'O';
-            if (scores.X > scores.O) return 'X';
-            return null;
-        }
-
-        function updateScores(){
-            const scores = computePieceCounts(board);
-            document.getElementById('scoreHuman').textContent = scores.O;
-            document.getElementById('scoreAI').textContent = scores.X;
-            document.getElementById('heuristicValue').textContent = '0.0';
 
             if (finalWinner){
                 if (finalWinner === 'O') document.getElementById('winnerDisplay').textContent = 'YOU (O)';
@@ -738,13 +544,9 @@
 
         function updateStatus(){
             const turnEl = document.getElementById('turnStatus');
-            if (!gameStarted){
-                turnEl.textContent = 'Not Started';
-            } else if (isGameOverFromBackend()){
-                turnEl.textContent = 'Game Over';
-            } else {
-                turnEl.textContent = currentPlayer === 'O' ? 'YOUR TURN (O)' : 'AI THINKING (X)';
-            }
+            if (!gameStarted) turnEl.textContent = 'Not Started';
+            else if (isGameOverFromBackend()) turnEl.textContent = 'Game Over';
+            else turnEl.textContent = currentPlayer === 'O' ? 'YOUR TURN (O)' : 'AI THINKING (X)';
         }
 
         function startGame(){
@@ -759,9 +561,7 @@
 
         function resetGame(){
             createBoard();
-            gameStarted = false;
-            currentPlayer = 'O';
-            lastMove = null;
+            lastMove = null; lastTreeData = null;
             document.getElementById('startBtn').disabled = false;
             document.getElementById('resetBtn').disabled = true;
             document.querySelectorAll('input[name="algorithm"]').forEach(r=> r.disabled = false);
@@ -774,183 +574,76 @@
             document.getElementById('treeEmpty').style.display = 'block';
             canvas.style.display = 'none';
 
-            // Restore the original summary card contents
-            const summaryCard = document.getElementById('summaryCard');
-            if (summaryCard && initialSummaryHTML) summaryCard.innerHTML = initialSummaryHTML;
-
+            if (initialSummaryHTML) document.getElementById('summaryCard').innerHTML = initialSummaryHTML;
             renderBoard();
         }
 
-        function showFinalOverlay(){
-            finalOverlay.style.display = 'flex';
-        }
-
-        function hideFinalOverlay(shouldReset){
-            finalOverlay.style.display = 'none';
-        }
-
-        // Tree visualization functions
         function drawTree(treeData){
             if (!treeData) return;
-
             const canvas = document.getElementById('treeCanvas');
             const ctx = canvas.getContext('2d');
             const container = document.getElementById('treeContainer');
-            const debugEl = document.getElementById('treeDebug');
             
-            // hide empty message and show canvas
             document.getElementById('treeEmpty').style.display = 'none';
             canvas.style.display = 'block';
-            debugEl.style.display = 'block';
 
             try {
-                // Temporarily use a more compact layout for visualization so
-                // very-wide trees don't render tiny when fitted to the page.
                 const origRadius = NODE_RADIUS, origLevel = LEVEL_HEIGHT, origSpacing = MIN_NODE_SPACING, origPadding = PADDING;
-                // Reduce horizontal spacing and vertical spacing for compact view
                 NODE_RADIUS = Math.max(20, Math.round(NODE_RADIUS * 1.0));
                 LEVEL_HEIGHT = Math.max(90, Math.round(LEVEL_HEIGHT * 0.6));
                 MIN_NODE_SPACING = Math.max(60, Math.round(MIN_NODE_SPACING * 0.35));
                 PADDING = Math.max(40, Math.round(PADDING * 0.6));
 
-                // Calculate tree dimensions (compact)
                 const treeMetrics = calculateTreeMetrics(treeData);
                 const rawWidth = Math.max(treeMetrics.width + PADDING * 2, 1000);
                 const rawHeight = Math.max(treeMetrics.height + PADDING * 2, 500);
 
-                // Cap logical canvas size to avoid insane dimensions but allow larger buffers
-                const MAX_CANVAS_WIDTH = 10000;
-                const MAX_CANVAS_HEIGHT = 6000;
+                const renderWidth = Math.min(rawWidth, 10000);
+                const renderHeight = Math.min(rawHeight, 6000);
 
-                const renderWidth = Math.min(rawWidth, MAX_CANVAS_WIDTH);
-                const renderHeight = Math.min(rawHeight, MAX_CANVAS_HEIGHT);
-
-                // Prepare canvas drawing buffer (logical size)
                 canvas.width = renderWidth;
                 canvas.height = renderHeight;
-
-                // Clear canvas
                 ctx.clearRect(0, 0, renderWidth, renderHeight);
 
-                // Compute scale to fit raw layout into buffer
                 const drawScale = renderWidth / rawWidth;
                 ctx.save();
                 ctx.scale(drawScale, drawScale);
-
-                // Draw tree using raw layout coordinates
                 drawNode(ctx, treeData, rawWidth / 2, PADDING + NODE_RADIUS, 0, rawWidth - PADDING * 2);
                 ctx.restore();
 
-                // Fit the canvas element into the container width and apply user zoom
                 const containerWidth = container.clientWidth - 24;
                 const baseFit = containerWidth / renderWidth;
-                // Use a higher minimum fit so trees remain legible
                 const fitScale = Math.min(8, Math.max(0.6, baseFit * userZoom));
-                // Center transform horizontally and anchor at top
                 canvas.style.transformOrigin = '50% 0';
                 canvas.style.transform = `scale(${fitScale})`;
                 canvas.style.width = renderWidth + 'px';
                 canvas.style.height = renderHeight + 'px';
-                // Center canvas element in container
                 canvas.style.display = 'block';
                 canvas.style.margin = '0 auto';
 
-                // Scroll to center horizontally
                 container.scrollLeft = Math.max(0, (renderWidth * fitScale - container.clientWidth) / 2);
 
-                // Store last tree and show debug information on-screen
                 lastTreeData = treeData;
-                debugEl.innerHTML = `raw: ${rawWidth}×${rawHeight}<br>buffer: ${renderWidth}×${renderHeight}<br>drawScale: ${drawScale.toFixed(3)}<br>fitScale: ${fitScale.toFixed(3)}<br>userZoom: ${userZoom.toFixed(2)}x<br>leaves: ${treeMetrics.leaves}`;
-                console.info('Tree draw metrics:', { rawWidth, rawHeight, renderWidth, renderHeight, drawScale, fitScale, leaves: treeMetrics.leaves });
-
-                // restore original layout metrics
                 NODE_RADIUS = origRadius; LEVEL_HEIGHT = origLevel; MIN_NODE_SPACING = origSpacing; PADDING = origPadding;
-
             } catch (err) {
-                // If any drawing error occurs show it visually
                 console.error('Error drawing tree:', err);
-                document.getElementById('treeEmpty').textContent = 'Error rendering tree: ' + (err && err.message ? err.message : String(err));
+                document.getElementById('treeEmpty').textContent = 'Error rendering tree: ' + err.message;
                 document.getElementById('treeEmpty').style.display = 'block';
                 canvas.style.display = 'none';
-                debugEl.innerHTML = `<strong style="color:#f88">Error</strong>: ${err && err.message ? err.message : String(err)}`;
-            }
-        }
-
-        // Draw the tree into the fullscreen overlay canvas
-        function drawTreeFull(treeData){
-            if (!treeData) return;
-            const canvas = document.getElementById('treeCanvasFull');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            const wrapper = canvas.parentElement;
-
-            try {
-                // Use larger visual metrics for fullscreen
-                const origRadius = NODE_RADIUS, origLevel = LEVEL_HEIGHT, origSpacing = MIN_NODE_SPACING;
-                NODE_RADIUS = Math.max(36, Math.round(origRadius * 0.9));
-                LEVEL_HEIGHT = Math.max(140, Math.round(origLevel * 0.9));
-                MIN_NODE_SPACING = Math.max(140, Math.round(origSpacing * 0.9));
-
-                const treeMetrics = calculateTreeMetrics(treeData);
-                const rawWidth = Math.max(treeMetrics.width + PADDING * 2, 1600);
-                const rawHeight = Math.max(treeMetrics.height + PADDING * 2, 900);
-
-                const MAX_CANVAS_WIDTH = 20000;
-                const MAX_CANVAS_HEIGHT = 8000;
-
-                const renderWidth = Math.min(rawWidth, MAX_CANVAS_WIDTH);
-                const renderHeight = Math.min(rawHeight, MAX_CANVAS_HEIGHT);
-
-                canvas.width = renderWidth;
-                canvas.height = renderHeight;
-                ctx.clearRect(0,0,renderWidth,renderHeight);
-
-                const drawScale = renderWidth / rawWidth;
-                ctx.save(); ctx.scale(drawScale, drawScale);
-                drawNode(ctx, treeData, rawWidth / 2, PADDING + NODE_RADIUS, 0, rawWidth - PADDING * 2);
-                ctx.restore();
-
-                // Fit to wrapper area
-                let availW = wrapper.clientWidth;
-                let availH = wrapper.clientHeight;
-                // if wrapper hasn't been laid out yet, try again on next frame
-                if (!availW || !availH) {
-                    requestAnimationFrame(()=> drawTreeFull(treeData));
-                    return;
-                }
-                const fitScale = Math.min(availW / renderWidth, availH / renderHeight, 2.5);
-                canvas.style.transformOrigin = '50% 0';
-                canvas.style.transform = `scale(${fitScale})`;
-                canvas.style.width = renderWidth + 'px';
-                canvas.style.height = renderHeight + 'px';
-
-                // restore
-                NODE_RADIUS = origRadius; LEVEL_HEIGHT = origLevel; MIN_NODE_SPACING = origSpacing;
-            } catch (err){
-                console.error('drawTreeFull error', err);
             }
         }
 
         function calculateTreeMetrics(node, level = 0){
             if (!node) return { width: 0, height: 0, leaves: 0 };
-            
             if (!node.children || node.children.length === 0){
-                return { 
-                    width: MIN_NODE_SPACING, 
-                    height: LEVEL_HEIGHT * (level + 1), 
-                    leaves: 1 
-                };
+                return { width: MIN_NODE_SPACING, height: LEVEL_HEIGHT * (level + 1), leaves: 1 };
             }
-
-            let totalLeaves = 0;
-            let maxHeight = 0;
-
+            let totalLeaves = 0, maxHeight = 0;
             for (const child of node.children){
                 const childMetrics = calculateTreeMetrics(child, level + 1);
                 totalLeaves += childMetrics.leaves;
                 maxHeight = Math.max(maxHeight, childMetrics.height);
             }
-
             return {
                 width: Math.max(totalLeaves * MIN_NODE_SPACING, MIN_NODE_SPACING * node.children.length),
                 height: maxHeight,
@@ -961,7 +654,6 @@
         function drawNode(ctx, node, x, y, level, availableWidth){
             if (!node) return;
 
-            // Get node color based on type
             const colors = {
                 'MAX': { fill: 'rgba(77, 163, 255, 0.9)', stroke: '#4da3ff' },
                 'MIN': { fill: 'rgba(255, 107, 203, 0.9)', stroke: '#ff6bcb' },
@@ -971,11 +663,9 @@
                 'PRUNED': { fill: 'rgba(160, 160, 160, 0.95)', stroke: '#8f8f8f' }
             };
 
-            // If the node was marked as pruned, render it using the PRUNED color
-            const effectiveType = node.pruned ? 'PRUNED' : node.type;
+            const effectiveType = (node.pruned || node.type === 'PRUNED') ? 'PRUNED' : node.type;
             const color = colors[effectiveType] || { fill: '#666', stroke: '#444' };
 
-            // Draw node circle
             ctx.beginPath();
             ctx.arc(x, y, NODE_RADIUS, 0, Math.PI * 2);
             ctx.fillStyle = color.fill;
@@ -984,48 +674,36 @@
             ctx.lineWidth = 3;
             ctx.stroke();
 
-            // Draw label above node (size based on NODE_RADIUS)
             ctx.fillStyle = '#ffffff';
             ctx.font = `bold ${Math.max(11, Math.round(NODE_RADIUS * 0.5))}px system-ui`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'bottom';
-            const labelText = node.label || node.type;
-            ctx.fillText(labelText, x, y - NODE_RADIUS - 5);
+            ctx.fillText(node.label || node.type, x, y - NODE_RADIUS - 5);
 
-            // Draw score inside node
             const scoreText = typeof node.score === 'number' ? node.score.toFixed(1) : (node.score || '');
             ctx.font = `bold ${Math.max(12, Math.round(NODE_RADIUS * 0.45))}px system-ui`;
             ctx.textBaseline = 'middle';
-            // Use a lighter text color for PRUNED nodes so the marker is visible on gray
-            if (node.type === 'PRUNED') {
-                ctx.fillStyle = '#071028';
-            } else {
-                ctx.fillStyle = '#071028';
-            }
+            ctx.fillStyle = '#071028';
             ctx.fillText(scoreText, x, y);
 
-            // Draw alpha/beta if present (for MAX/MIN nodes)
-            if (node.alpha !== undefined && node.alpha !== null || node.beta !== undefined && node.beta !== null) {
-                const abText = `α:${(node.alpha !== null && node.alpha !== undefined) ? Number(node.alpha).toFixed(1) : 'N/A'} β:${(node.beta !== null && node.beta !== undefined) ? Number(node.beta).toFixed(1) : 'N/A'}`;
+            if ((node.alpha !== undefined && node.alpha !== null) || (node.beta !== undefined && node.beta !== null)) {
+                const alphaVal = (node.alpha !== null && node.alpha !== undefined && isFinite(node.alpha)) ? Number(node.alpha).toFixed(1) : 'N/A';
+                const betaVal = (node.beta !== null && node.beta !== undefined && isFinite(node.beta)) ? Number(node.beta).toFixed(1) : 'N/A';
                 ctx.font = `${Math.max(10, Math.round(NODE_RADIUS * 0.18))}px system-ui`;
                 ctx.textBaseline = 'top';
                 ctx.fillStyle = '#cfe9ff';
-                ctx.fillText(abText, x, y + NODE_RADIUS + 6);
+                ctx.fillText(`α:${alphaVal} β:${betaVal}`, x, y + NODE_RADIUS + 6);
             }
 
-            // If node was pruned, draw a small '✂' marker
-            if (node.pruned) {
+            if (node.pruned || node.type === 'PRUNED') {
                 ctx.font = `bold ${Math.max(12, Math.round(NODE_RADIUS * 0.45))}px system-ui`;
                 ctx.fillStyle = '#ffdd99';
                 ctx.fillText('✂', x + NODE_RADIUS - 18, y - NODE_RADIUS + 6);
             }
 
-            // Draw children
             if (node.children && node.children.length > 0){
                 const childY = y + LEVEL_HEIGHT;
                 const childCount = node.children.length;
-                
-                // Calculate positions for children
                 let positions = [];
                 if (childCount === 1) {
                     positions = [x];
@@ -1033,37 +711,27 @@
                     const spacing = Math.max(MIN_NODE_SPACING, availableWidth / (childCount + 1));
                     const totalWidth = spacing * (childCount - 1);
                     const startX = x - totalWidth / 2;
-                    
-                    for (let i = 0; i < childCount; i++){
-                        positions.push(startX + (i * spacing));
-                    }
+                    for (let i = 0; i < childCount; i++) positions.push(startX + (i * spacing));
                 }
 
-                // Draw lines and child nodes
                 for (let i = 0; i < childCount; i++){
                     const childX = positions[i];
                     const child = node.children[i];
 
-                    // Draw line to child
                     ctx.beginPath();
                     ctx.moveTo(x, y + NODE_RADIUS);
                     ctx.lineTo(childX, childY - NODE_RADIUS);
-                    // Dim lines that lead to pruned children for clarity
                     const childIsPruned = (child && (child.type === 'PRUNED' || child.pruned));
                     ctx.strokeStyle = childIsPruned ? 'rgba(120,120,120,0.45)' : 'rgba(255, 255, 255, 0.15)';
                     ctx.lineWidth = childIsPruned ? 1.5 : 2;
                     ctx.stroke();
 
-                    // Calculate available width for child subtree
                     const childWidth = childCount === 1 ? availableWidth : availableWidth / childCount;
-                    
-                    // Draw child node recursively
                     drawNode(ctx, child, childX, childY, level + 1, childWidth);
                 }
             }
         }
 
-        // Initialize on page load
         init();
     </script>
 </body>
