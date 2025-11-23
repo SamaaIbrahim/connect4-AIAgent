@@ -12,6 +12,7 @@
             --pink: #ff6bcb;
             --yellow: #ffd166;
             --blue: #4da3ff;
+            --green: #06d6a0;
             --muted: #9aa6b2;
             --white: #ffffff;
             --overlay-bg: rgba(3,6,15,0.75);
@@ -58,7 +59,6 @@
             font-weight:700;color:var(--muted);font-size:.98rem;
         }
 
-        /* Controls */
         .controls{display:flex;flex-direction:column;gap:12px}
         .settings-label{display:block;margin-bottom:8px;color:var(--muted);font-weight:700}
         .radio-group{display:flex;flex-direction:column;gap:8px}
@@ -85,7 +85,6 @@
         .status-label{color:var(--muted);font-size:.82rem;margin-bottom:6px}
         .status-value{font-weight:800;color:var(--white);font-size:1.05rem}
 
-        /* Board */
         .board-card{display:flex;flex-direction:column;gap:12px}
         .board-container{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00));padding:18px;border-radius:12px}
         .column-indicators{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:8px}
@@ -105,25 +104,18 @@
         .legend-disc.human{background:linear-gradient(90deg,var(--pink),#ff3fb0)}
         .legend-disc.ai{background:linear-gradient(90deg,var(--blue),#8fd1ff)}
 
-        /* Tree - Scrollable and Centered */
-        .tree-area{grid-column:1 / -1;min-height:380px;max-height:720px;overflow:hidden;position:relative}
+        .tree-area{grid-column:1 / -1;min-height:380px;max-height:720px;overflow:hidden}
         .tree-canvas-container{
             background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
-            border-radius:10px;
-            height:100%;
-            overflow:auto;
-            position:relative;
+            border-radius:10px;padding:12px;height:100%;
+            overflow-x:auto;overflow-y:auto;position:relative;
         }
-        #treeCanvas{
-            display:block;
-            background:transparent;
-        }
-        .tree-empty{color:var(--muted);text-align:center;padding:24px;font-size:.98rem;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
-        .tree-legend{position:absolute;left:12px;top:12px;background:rgba(2,6,23,0.65);border-radius:8px;padding:8px 10px;color:var(--muted);font-size:.9rem;border:1px solid rgba(255,255,255,0.02);z-index:10}
+        #treeCanvas{display:block;background:transparent;margin:0 auto}
+        .tree-empty{color:var(--muted);text-align:center;padding:24px;font-size:.98rem}
+        .tree-legend{position:absolute;left:12px;top:12px;background:rgba(2,6,23,0.85);border-radius:8px;padding:8px 10px;color:var(--muted);font-size:.9rem;border:1px solid rgba(255,255,255,0.02);z-index:10}
         .tree-legend .item{display:flex;gap:8px;align-items:center;margin-bottom:6px}
         .node-dot{width:12px;height:12px;border-radius:50%;display:inline-block}
 
-        /* API status & loading */
         .api-status{position:fixed;right:20px;bottom:20px;background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:10px 14px;border-radius:10px;border-left:4px solid var(--pink);font-size:.92rem;color:var(--muted);box-shadow:0 8px 30px rgba(2,6,23,0.6)}
         .api-status.connected{border-left-color:var(--blue);color:#cfe9ff}
         .api-status.error{border-left-color:var(--yellow);color:#ffe9c2}
@@ -134,7 +126,6 @@
         .spinner{width:50px;height:50px;border-radius:50%;border:4px solid rgba(255,255,255,0.04);border-top-color:var(--pink);animation:spin 1s linear infinite;margin:0 auto 12px}
         @keyframes spin{to{transform:rotate(360deg)}}
 
-        /* Final results overlay */
         .final-overlay{
             position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:var(--overlay-bg);z-index:2000;
         }
@@ -143,7 +134,7 @@
         }
         .final-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
         .final-title{font-size:1.4rem;font-weight:900;background:linear-gradient(90deg,var(--pink),var(--yellow));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-        .final-close{background:transparent;border:none;color:var(--muted);cursor:pointer;font-weight:700}
+        .final-close{background:transparent;border:none;color:var(--muted);cursor:pointer;font-weight:700;font-size:1.4rem}
         .final-body{display:flex;gap:18px;flex-wrap:wrap;align-items:center;justify-content:center;padding:6px 0}
         .final-card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00));padding:12px;border-radius:10px;min-width:180px;text-align:center;border:1px solid rgba(255,255,255,0.03)}
         .final-winner{font-size:1.6rem;font-weight:900;margin-bottom:6px}
@@ -175,6 +166,7 @@
                             <label class="radio-option selected"><input type="radio" name="algorithm" value="minimax" checked> Minimax</label>
                             <label class="radio-option"><input type="radio" name="algorithm" value="alphabeta"> Minimax (Alpha-Beta)</label>
                             <label class="radio-option"><input type="radio" name="algorithm" value="expected"> Expected Minimax</label>
+                            <label class="radio-option"><input type="radio" name="algorithm" value="expected_prune"> Expected Minimax (Pruned)</label>
                         </div>
                     </div>
 
@@ -182,7 +174,7 @@
                         <label class="settings-label">Depth (K)</label>
                         <div class="slider-container">
                             <div class="depth-value">K = <span id="depthValue">4</span></div>
-                            <input type="range" id="depthSlider" min="1" max="8" value="4">
+                            <input type="range" id="depthSlider" min="1" max="8" value="4" style="width:100%">
                         </div>
                     </div>
 
@@ -193,14 +185,40 @@
 
                     <div style="height:8px"></div>
 
-                    <div class="status-card"><div class="status-label">Current Turn</div><div class="status-value" id="turnStatus">Not Started</div></div>
-                    <div class="status-card"><div class="status-label">Board Heuristic</div><div class="status-value" id="heuristicValue" style="color:var(--yellow)">0.0</div></div>
-                    <div class="status-card"><div class="status-label">YOU (O) - 4-in-a-rows</div><div class="status-value" id="scoreHuman">0</div></div>
-                    <div class="status-card"><div class="status-label">AI (X) - 4-in-a-rows</div><div class="status-value" id="scoreAI">0</div></div>
-                    <div class="status-card"><div class="status-label">Winner</div><div class="status-value" id="winnerDisplay">—</div></div>
-                    <div class="status-card"><div class="status-label">Winner</div><div class="status-value" id="winnerDisplay">—</div></div>
+                    <div class="status-card" id="summaryCard">
+                        <div style="display:flex;flex-direction:column;gap:10px">
+                            <div>
+                                <div class="status-label">Current Turn</div>
+                                <div class="status-value" id="turnStatus">Not Started</div>
+                            </div>
 
-                    <div class="status-card"><div class="status-label">AI Stats</div><div id="aiStats" style="font-size:.88rem;color:var(--muted)">Waiting...</div></div>
+                            <div>
+                                <div class="status-label">Board Heuristic</div>
+                                <div class="status-value" id="heuristicValue" style="color:var(--yellow)">0.0</div>
+                            </div>
+
+                            <div style="display:flex;gap:12px">
+                                <div style="flex:1">
+                                    <div class="status-label">Score — YOU (O)</div>
+                                    <div class="status-value" id="scoreHuman">0</div>
+                                </div>
+                                <div style="flex:1">
+                                    <div class="status-label">Score — AI (X)</div>
+                                    <div class="status-value" id="scoreAI">0</div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="status-label">Winner</div>
+                                <div class="status-value" id="winnerDisplay">—</div>
+                            </div>
+
+                            <div>
+                                <div class="status-label">AI Stats</div>
+                                <div id="aiStats" style="font-size:.88rem;color:var(--muted)">Waiting...</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -218,17 +236,37 @@
             </div>
 
             <div class="card tree-area" id="treeCard">
-                <div class="card-header">🌳 Minimax Tree</div>
+                <div class="card-header">🌳 Decision Tree</div>
                 <div class="tree-canvas-container" id="treeContainer">
                     <div class="tree-legend" id="treeLegend">
                         <div class="item"><span class="node-dot" style="background: linear-gradient(90deg,var(--blue),#8fd1ff)"></span> MAX</div>
                         <div class="item"><span class="node-dot" style="background: linear-gradient(90deg,var(--pink),#ff92d6)"></span> MIN</div>
-                        <div class="item"><span class="node-dot" style="background: linear-gradient(90deg,var(--yellow),#ffe7a8)"></span> EXPECTED</div>
+                        <div class="item"><span class="node-dot" style="background: linear-gradient(90deg,var(--yellow),#ffe7a8)"></span> CHANCE</div>
+                        <div class="item"><span class="node-dot" style="background: linear-gradient(90deg,var(--green),#7ae7c7)"></span> OUTCOME</div>
                         <div class="item"><span class="node-dot" style="background: rgba(150,150,150,0.85)"></span> PRUNED</div>
+                        <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+                            <label style="font-size:.85rem;color:var(--muted);font-weight:700">Zoom</label>
+                            <input id="treeZoom" type="range" min="0.5" max="4" step="0.1" value="1" style="flex:1">
+                            <div id="treeZoomVal" style="min-width:40px;text-align:center;color:var(--muted);font-weight:700">1.0x</div>
+                            <button id="zoomToFillBtn" style="margin-left:8px;padding:6px 8px;border-radius:8px;border:none;background:linear-gradient(90deg,var(--blue),#82c7ff);color:#071028;font-weight:800;cursor:pointer">Zoom to fill</button>
+                        </div>
                     </div>
+
+                    <div id="treeDebug" style="position:absolute;right:12px;bottom:12px;background:rgba(2,6,23,0.85);color:var(--muted);padding:8px;border-radius:8px;font-size:.85rem;border:1px solid rgba(255,255,255,0.02);z-index:11;max-width:320px;display:none"></div>
 
                     <canvas id="treeCanvas"></canvas>
                     <div class="tree-empty" id="treeEmpty">Make your first move to see the decision tree!</div>
+                </div>
+            </div>
+
+            <!-- Fullscreen tree overlay -->
+            <div id="treeFullscreen" style="display:none;position:fixed;inset:0;background:rgba(3,6,15,0.95);z-index:3000;align-items:center;justify-content:center;padding:18px">
+                <div style="width:100%;height:100%;position:relative;">
+                    <button id="closeTreeFullBtn" style="position:absolute;right:18px;top:18px;z-index:3010;padding:10px 14px;border-radius:8px;border:none;background:linear-gradient(90deg,var(--pink),var(--yellow));font-weight:900;cursor:pointer">Close</button>
+                    <div style="position:absolute;left:18px;top:18px;z-index:3010;color:var(--muted)">Full-size Decision Tree</div>
+                    <div style="position:absolute;inset:80px;overflow:auto;padding:12px">
+                        <canvas id="treeCanvasFull" style="display:block;margin:0 auto;background:transparent;" ></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -246,7 +284,7 @@
     <div class="final-overlay" id="finalOverlay" role="dialog" aria-modal="true" aria-labelledby="finalTitle">
         <div class="final-panel" id="finalPanel">
             <div class="final-header">
-                <div class="final-title" id="finalTitle">Game Results</div>
+                <div class="final-title" id="finalTitle">🏆 Game Over!</div>
                 <button class="final-close" id="finalCloseBtn" aria-label="Close results">✕</button>
             </div>
 
@@ -257,7 +295,7 @@
                 </div>
 
                 <div class="final-card" id="finalScoreCard">
-                    <div style="font-weight:900;font-size:1.05rem">4-in-a-rows</div>
+                    <div style="font-weight:900;font-size:1.05rem">Final Score</div>
                     <div style="display:flex;gap:12px;justify-content:center;margin-top:10px;align-items:center">
                         <div style="text-align:center">
                             <div style="font-size:1.1rem;font-weight:900;color:var(--pink)">YOU (O)</div>
@@ -271,8 +309,8 @@
                 </div>
 
                 <div class="final-card" id="finalInfoCard">
-                    <div style="font-weight:900;font-size:1.05rem">Game Status</div>
-                    <div id="finalReason" style="color:var(--muted);margin-top:8px;font-size:.95rem">Game ended</div>
+                    <div style="font-weight:900;font-size:1.05rem">How the game ended</div>
+                    <div id="finalReason" style="color:var(--muted);margin-top:8px;font-size:.95rem">—</div>
                 </div>
             </div>
 
@@ -292,17 +330,37 @@
         let algorithm = 'minimax';
         let depth = 4;
         let lastMove = null;
-        let currentGameResult = null;
+        let finalScores = null;
+        let finalWinner = null;
+        let finalReason = '';
 
         const apiStatusEl = document.getElementById('apiStatus');
         const loadingEl = document.getElementById('loadingOverlay');
         const finalOverlay = document.getElementById('finalOverlay');
+        const finalWinnerText = document.getElementById('finalWinnerText');
+        const finalScoreO = document.getElementById('finalScoreO');
+        const finalScoreX = document.getElementById('finalScoreX');
+        const finalReasonEl = document.getElementById('finalReason');
+
+        // Tree drawing constants (increased for better visibility)
+        let NODE_RADIUS = 60;
+        let LEVEL_HEIGHT = 220;
+        let MIN_NODE_SPACING = 220;
+        let PADDING = 80;
+
+        // Last drawn tree + user zoom
+        let lastTreeData = null;
+        let userZoom = 1.0;
+        let initialSummaryHTML = null;
 
         async function init(){
             await checkAPIConnection();
             createBoard();
             setupEventListeners();
             renderBoard();
+            // capture the initial summary card HTML so we can restore it on reset
+            const summary = document.getElementById('summaryCard');
+            if (summary) initialSummaryHTML = summary.innerHTML;
             updateScores();
         }
 
@@ -324,7 +382,9 @@
 
         function createBoard(){
             board = Array(6).fill(null).map(()=> Array(7).fill('.'));
-            currentGameResult = null;
+            finalScores = null;
+            finalWinner = null;
+            finalReason = '';
         }
 
         function setupEventListeners(){
@@ -347,6 +407,122 @@
             document.getElementById('finalCloseBtn').addEventListener('click', ()=> hideFinalOverlay(false));
             document.getElementById('finalCloseKeepBtn').addEventListener('click', ()=> hideFinalOverlay(false));
             document.getElementById('finalResetBtn').addEventListener('click', ()=> { hideFinalOverlay(true); resetGame(); });
+
+            // Fullscreen visualize button
+            const openBtn = document.getElementById('openTreeBtn');
+            if (openBtn) openBtn.addEventListener('click', ()=>{
+                const fs = document.getElementById('treeFullscreen');
+                if (!fs) return;
+                fs.style.display = 'flex';
+
+                // If we have the full tree data, draw the full visualization after layout.
+                if (lastTreeData) {
+                    requestAnimationFrame(()=> requestAnimationFrame(()=> drawTreeFull(lastTreeData)));
+                    return;
+                }
+
+                // Otherwise try to copy whatever is currently rendered in the small canvas
+                // into the fullscreen canvas so users still see something useful.
+                const src = document.getElementById('treeCanvas');
+                const dest = document.getElementById('treeCanvasFull');
+                const wrapper = dest && dest.parentElement;
+
+                if (src && dest && src.style.display !== 'none' && src.width > 0 && src.height > 0) {
+                    // copy the existing buffer image into the fullscreen canvas
+                    dest.width = src.width;
+                    dest.height = src.height;
+                    const dctx = dest.getContext('2d');
+                    dctx.clearRect(0,0,dest.width,dest.height);
+                    dctx.drawImage(src, 0, 0);
+
+                    // apply a fit transform once the wrapper is laid out
+                    requestAnimationFrame(()=> requestAnimationFrame(()=> {
+                        if (!wrapper) return;
+                        const availW = wrapper.clientWidth || 1;
+                        const availH = wrapper.clientHeight || 1;
+                        const fitScale = Math.min(availW / dest.width, availH / dest.height, 2.5);
+                        dest.style.transformOrigin = '50% 0';
+                        dest.style.transform = `scale(${fitScale})`;
+                        dest.style.width = dest.width + 'px';
+                        dest.style.height = dest.height + 'px';
+                    }));
+
+                    return;
+                }
+
+                // No tree available at all — draw a helpful message in the fullscreen canvas
+                if (dest && wrapper) {
+                    const w = Math.max(800, Math.floor(wrapper.clientWidth * 0.8) || 800);
+                    const h = Math.max(240, Math.floor(wrapper.clientHeight * 0.4) || 240);
+                    dest.width = w; dest.height = h;
+                    const dctx = dest.getContext('2d');
+                    dctx.clearRect(0,0,w,h);
+                    dctx.fillStyle = 'rgba(255,255,255,0.06)';
+                    dctx.fillRect(0,0,w,h);
+                    dctx.fillStyle = '#cfe9ff';
+                    dctx.textAlign = 'center';
+                    dctx.font = 'bold 20px system-ui';
+                    dctx.fillText('No decision tree available', w/2, h/2 - 6);
+                    dctx.font = '14px system-ui';
+                    dctx.fillStyle = '#9aa6b2';
+                    dctx.fillText('Make a move or run the AI to generate the tree', w/2, h/2 + 22);
+
+                    requestAnimationFrame(()=> requestAnimationFrame(()=> {
+                        const availW = wrapper.clientWidth || 1;
+                        const availH = wrapper.clientHeight || 1;
+                        const fitScale = Math.min(availW / dest.width, availH / dest.height, 2.5);
+                        dest.style.transformOrigin = '50% 0';
+                        dest.style.transform = `scale(${fitScale})`;
+                        dest.style.width = dest.width + 'px';
+                        dest.style.height = dest.height + 'px';
+                    }));
+                }
+            });
+
+            const closeBtn = document.getElementById('closeTreeFullBtn');
+            if (closeBtn) closeBtn.addEventListener('click', ()=>{
+                const fs = document.getElementById('treeFullscreen');
+                if (fs) fs.style.display = 'none';
+            });
+
+            // Zoom control (redraw last tree when changed)
+            const zoomEl = document.getElementById('treeZoom');
+            const zoomVal = document.getElementById('treeZoomVal');
+            if (zoomEl){
+                zoomEl.addEventListener('input', (e)=>{
+                    userZoom = parseFloat(e.target.value) || 1.0;
+                    if (zoomVal) zoomVal.textContent = userZoom.toFixed(1) + 'x';
+                    if (lastTreeData) drawTree(lastTreeData);
+                });
+            }
+
+            // Zoom-to-fill button handler
+            const zoomToFillBtn = document.getElementById('zoomToFillBtn');
+            if (zoomToFillBtn){
+                zoomToFillBtn.addEventListener('click', ()=>{
+                    const canvas = document.getElementById('treeCanvas');
+                    const container = document.getElementById('treeContainer');
+                    if (!canvas || !container || !lastTreeData) {
+                        // nothing to do
+                        return;
+                    }
+
+                    // canvas.width is the logical renderWidth used by drawTree
+                    const renderWidth = canvas.width || canvas.getBoundingClientRect().width;
+                    const containerWidth = Math.max(1, container.clientWidth - 24);
+                    const baseFit = containerWidth / renderWidth;
+
+                    // compute desired zoom so baseFit * userZoom ~ 1.0 (fill)
+                    let desiredZoom = 1.0 / Math.max(1e-6, baseFit);
+                    // clamp to slider bounds
+                    desiredZoom = Math.min(parseFloat(zoomEl.max || 4), Math.max(parseFloat(zoomEl.min || 0.5), desiredZoom));
+
+                    userZoom = desiredZoom;
+                    if (zoomEl) { zoomEl.value = String(userZoom); }
+                    if (zoomVal) zoomVal.textContent = userZoom.toFixed(1) + 'x';
+                    drawTree(lastTreeData);
+                });
+            }
         }
 
         function renderBoard(){
@@ -370,7 +546,7 @@
                     cell.dataset.row = row;
                     cell.dataset.col = col;
 
-                    if (gameStarted && currentPlayer === 'O' && !isGameOver()){
+                    if (gameStarted && currentPlayer === 'O' && !isGameOverFromBackend()){
                         cell.addEventListener('click', ()=> handleCellClick(col));
                         cell.addEventListener('mouseenter', ()=> { if (isValidMove(col)) document.getElementById(`indicator-${col}`).classList.add('active'); });
                         cell.addEventListener('mouseleave', ()=> { document.getElementById(`indicator-${col}`).classList.remove('active'); });
@@ -409,48 +585,19 @@
             return -1;
         }
 
-        function isGameOver(){
-            return currentGameResult && currentGameResult.winner !== null;
+        function isGameOverFromBackend(){
+            return finalScores !== null || finalWinner !== null || finalReason !== '';
         }
 
         async function handleCellClick(col){
-            if (!gameStarted || currentPlayer !== 'O' || !isValidMove(col) || isGameOver()) return;
+            if (!gameStarted || currentPlayer !== 'O' || !isValidMove(col) || isGameOverFromBackend()) return;
 
             makeMove(col,'O');
             lastMove = { col, player: 'O' };
             currentPlayer = 'X';
             renderBoard();
-            
-            // Check if board is full after human move
-            if (isBoardFull()) {
-                // Need to get game result from backend
-                try {
-                    const res = await fetch(`${API_URL}/heuristic`, {
-                        method: 'POST',
-                        headers: {'Content-Type':'application/json'},
-                        body: JSON.stringify({ board: board })
-                    });
-                    const result = await res.json();
-                    if (result.gameResult) {
-                        currentGameResult = result.gameResult;
-                        renderBoard();
-                        if (currentGameResult.isGameOver) {
-                            setTimeout(() => {
-                                showFinalOverlay();
-                            }, 500);
-                            return;
-                        }
-                    }
-                } catch (err) {
-                    console.error('Error checking game result:', err);
-                }
-            }
 
             setTimeout(()=> aiMove(), 200);
-        }
-        
-        function isBoardFull(){
-            return board.every(row => row.every(cell => cell !== '.'));
         }
 
         async function aiMove(){
@@ -469,12 +616,6 @@
                     return;
                 }
 
-                // Update game result from backend
-                if (result.gameResult) {
-                    currentGameResult = result.gameResult;
-                }
-
-                // Update AI stats
                 document.getElementById('aiStats').innerHTML = `
                     <strong>Col:</strong> ${result.move !== null && result.move !== undefined ? (result.move + 1) : '—'}<br>
                     <strong>Score:</strong> ${typeof result.score === 'number' ? result.score.toFixed(2) : (result.score ?? '—')}<br>
@@ -482,22 +623,26 @@
                     <strong>Nodes:</strong> ${result.nodes ?? 'N/A'}
                 `;
 
-                // Draw tree
-                if (result.tree) drawTree(result.tree);
+                if (result.tree) {
+                    lastTreeData = result.tree; // keep consistent name used elsewhere
+                    console.info('Received tree from backend, drawing...');
+                    drawTree(result.tree);
+                    // If fullscreen is open, also draw there
+                    if (document.getElementById('treeFullscreen').style.display === 'flex') drawTreeFull(result.tree);
+                }
 
-                // Apply AI move
                 if (result.move !== null && result.move !== undefined){
                     makeMove(result.move, 'X');
                     lastMove = { col: result.move, player: 'X' };
                 }
 
-                currentPlayer = 'O';
-                renderBoard();
-
-                // Check if game is over after AI move
-                if (isGameOver()) {
-                    showFinalOverlay();
+                if (result.game_over) {
+                    applyBackendFinalState(result);
+                } else {
+                    currentPlayer = 'O';
                 }
+
+                renderBoard();
             } catch (err) {
                 loadingEl.classList.remove('active');
                 alert('Error connecting to Python backend: ' + err.message);
@@ -505,60 +650,110 @@
             }
         }
 
-        function updateScores(){
-            const result = currentGameResult || { x_fours: 0, o_fours: 0, winner: null };
-            
-            document.getElementById('scoreHuman').textContent = result.o_fours || 0;
-            document.getElementById('scoreAI').textContent = result.x_fours || 0;
+        function applyBackendFinalState(result){
+            finalScores = result.final_scores ?? computePieceCounts(board);
+            finalWinner = ('winner' in result) ? result.winner : inferWinnerFromFinalScores(finalScores);
+            finalReason = result.reason ?? (result.game_over ? 'Backend stopped the game' : '');
 
-            const winnerDisplay = document.getElementById('winnerDisplay');
-            if (result.winner === 'O') { 
-                winnerDisplay.textContent = 'YOU (O)'; 
-                winnerDisplay.style.color = 'var(--pink)'; 
-            } else if (result.winner === 'X') { 
-                winnerDisplay.textContent = 'AI (X)'; 
-                winnerDisplay.style.color = 'var(--blue)'; 
-            } else if (result.winner === 'Draw') {
-                winnerDisplay.textContent = 'DRAW';
-                winnerDisplay.style.color = 'var(--yellow)';
-            } else if (result.winner === 'Both') {
-                winnerDisplay.textContent = 'BOTH';
-                winnerDisplay.style.color = 'var(--yellow)';
+            gameStarted = false;
+
+            updateScores();
+
+            finalScoreO.textContent = finalScores.O ?? 0;
+            finalScoreX.textContent = finalScores.X ?? 0;
+            if (finalWinner === 'O') {
+                finalWinnerText.textContent = 'YOU WIN! 🎉';
+                finalWinnerText.style.background = 'linear-gradient(90deg,var(--pink),#ff92d6)';
+                finalWinnerText.style.webkitBackgroundClip = 'text';
+                finalWinnerText.style.webkitTextFillColor = 'transparent';
+            } else if (finalWinner === 'X') {
+                finalWinnerText.textContent = 'AI WINS 🤖';
+                finalWinnerText.style.background = 'linear-gradient(90deg,var(--blue),#82c7ff)';
+                finalWinnerText.style.webkitBackgroundClip = 'text';
+                finalWinnerText.style.webkitTextFillColor = 'transparent';
             } else {
-                winnerDisplay.textContent = '—';
-                winnerDisplay.style.color = 'var(--white)';
+                finalWinnerText.textContent = 'TIE GAME 🤝';
+                finalWinnerText.style.background = 'linear-gradient(90deg,var(--yellow),#ffe7a8)';
+                finalWinnerText.style.webkitBackgroundClip = 'text';
+                finalWinnerText.style.webkitTextFillColor = 'transparent';
+            }
+            finalReasonEl.textContent = finalReason || 'Game ended';
+
+            // Replace the left summary card content with a compact final-summary
+            // so final results are visible inline without needing the overlay.
+            const summaryCard = document.getElementById('summaryCard');
+            if (summaryCard) {
+                const winnerLabel = finalWinner === 'O' ? 'YOU (O) WIN' : finalWinner === 'X' ? 'AI (X) WINS' : 'TIE GAME';
+                summaryCard.innerHTML = `
+                    <div style="display:flex;flex-direction:column;gap:8px">
+                        <div style="font-weight:900;font-size:1.05rem;color:var(--muted)">${winnerLabel}</div>
+                        <div style="display:flex;gap:12px">
+                            <div style="flex:1"><div class="status-label">YOU (O)</div><div class="status-value">${finalScores.O ?? 0}</div></div>
+                            <div style="flex:1"><div class="status-label">AI (X)</div><div class="status-value">${finalScores.X ?? 0}</div></div>
+                        </div>
+                        <div style="color:var(--muted);font-size:.9rem">${finalReason || ''}</div>
+                    </div>
+                `;
+            }
+
+            // Still show the final overlay dialog as well (user can close it)
+            showFinalOverlay();
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('resetBtn').disabled = false;
+            document.querySelectorAll('input[name="algorithm"]').forEach(r=> r.disabled = false);
+            document.getElementById('depthSlider').disabled = false;
+        }
+
+        function computePieceCounts(bd){
+            let o=0,x=0;
+            for (let r=0; r<6; r++){
+                for (let c=0; c<7; c++){
+                    if (bd[r][c] === 'O') o++;
+                    if (bd[r][c] === 'X') x++;
+                }
+            }
+            return {O:o,X:x};
+        }
+
+        function inferWinnerFromFinalScores(scores){
+            if (scores.O > scores.X) return 'O';
+            if (scores.X > scores.O) return 'X';
+            return null;
+        }
+
+        function updateScores(){
+            const scores = computePieceCounts(board);
+            document.getElementById('scoreHuman').textContent = scores.O;
+            document.getElementById('scoreAI').textContent = scores.X;
+            document.getElementById('heuristicValue').textContent = '0.0';
+
+            if (finalWinner){
+                if (finalWinner === 'O') document.getElementById('winnerDisplay').textContent = 'YOU (O)';
+                else if (finalWinner === 'X') document.getElementById('winnerDisplay').textContent = 'AI (X)';
+                else document.getElementById('winnerDisplay').textContent = 'TIE';
+            } else {
+                document.getElementById('winnerDisplay').textContent = '—';
             }
         }
 
         function updateStatus(){
-            const turnStatus = document.getElementById('turnStatus');
-            if (!gameStarted) { 
-                turnStatus.textContent = 'Not Started'; 
-                turnStatus.style.color = 'var(--muted)'; 
-            } else if (currentPlayer === 'O') { 
-                turnStatus.textContent = 'YOUR TURN'; 
-                turnStatus.style.color = 'var(--pink)'; 
-            } else { 
-                turnStatus.textContent = 'AI TURN'; 
-                turnStatus.style.color = 'var(--blue)'; 
+            const turnEl = document.getElementById('turnStatus');
+            if (!gameStarted){
+                turnEl.textContent = 'Not Started';
+            } else if (isGameOverFromBackend()){
+                turnEl.textContent = 'Game Over';
+            } else {
+                turnEl.textContent = currentPlayer === 'O' ? 'YOUR TURN (O)' : 'AI THINKING (X)';
             }
         }
 
         function startGame(){
-            createBoard();
             gameStarted = true;
             currentPlayer = 'O';
             document.getElementById('startBtn').disabled = true;
             document.getElementById('resetBtn').disabled = false;
             document.querySelectorAll('input[name="algorithm"]').forEach(r=> r.disabled = true);
             document.getElementById('depthSlider').disabled = true;
-            
-            const canvas = document.getElementById('treeCanvas');
-            const ctx = canvas.getContext('2d');
-            ctx && ctx.clearRect(0,0,canvas.width,canvas.height);
-            canvas.style.display = 'none';
-            document.getElementById('treeEmpty').style.display = 'block';
-            
             renderBoard();
         }
 
@@ -572,273 +767,304 @@
             document.querySelectorAll('input[name="algorithm"]').forEach(r=> r.disabled = false);
             document.getElementById('depthSlider').disabled = false;
             document.getElementById('aiStats').textContent = 'Waiting...';
-            
-            hideFinalOverlay(false);
+
             const canvas = document.getElementById('treeCanvas');
             const ctx = canvas.getContext('2d');
-            ctx && ctx.clearRect(0,0,canvas.width,canvas.height);
-            canvas.style.display = 'none';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             document.getElementById('treeEmpty').style.display = 'block';
-            
-            updateScores();
+            canvas.style.display = 'none';
+
+            // Restore the original summary card contents
+            const summaryCard = document.getElementById('summaryCard');
+            if (summaryCard && initialSummaryHTML) summaryCard.innerHTML = initialSummaryHTML;
+
             renderBoard();
         }
 
         function showFinalOverlay(){
-            if (!currentGameResult) return;
-            
-            const result = currentGameResult;
-            
-            document.getElementById('finalScoreO').textContent = result.o_fours || 0;
-            document.getElementById('finalScoreX').textContent = result.x_fours || 0;
-            
-            const finalWinnerText = document.getElementById('finalWinnerText');
-            if (result.winner === 'O') {
-                finalWinnerText.textContent = 'YOU WIN! (O)';
-                finalWinnerText.style.background = 'linear-gradient(90deg,var(--pink),#ff92d6)';
-                finalWinnerText.style.webkitBackgroundClip = 'text';
-                finalWinnerText.style.webkitTextFillColor = 'transparent';
-            } else if (result.winner === 'X') {
-                finalWinnerText.textContent = 'AI WINS! (X)';
-                finalWinnerText.style.background = 'linear-gradient(90deg,var(--blue),#82c7ff)';
-                finalWinnerText.style.webkitBackgroundClip = 'text';
-                finalWinnerText.style.webkitTextFillColor = 'transparent';
-            } else if (result.winner === 'Draw') {
-                finalWinnerText.textContent = 'DRAW';
-                finalWinnerText.style.background = 'linear-gradient(90deg,var(--yellow),#ffe7a8)';
-                finalWinnerText.style.webkitBackgroundClip = 'text';
-                finalWinnerText.style.webkitTextFillColor = 'transparent';
-            } else if (result.winner === 'Tie') {
-                finalWinnerText.textContent = 'TIE';
-                finalWinnerText.style.background = 'linear-gradient(90deg,var(--yellow),#ffe7a8)';
-                finalWinnerText.style.webkitBackgroundClip = 'text';
-                finalWinnerText.style.webkitTextFillColor = 'transparent';
-            } else {
-                finalWinnerText.textContent = 'GAME OVER';
-                finalWinnerText.style.background = 'linear-gradient(90deg,var(--muted),#ccc)';
-                finalWinnerText.style.webkitBackgroundClip = 'text';
-                finalWinnerText.style.webkitTextFillColor = 'transparent';
-            }
-            
-            let reasonText = 'Game completed';
-            if (result.winner === 'O') reasonText = `You got ${result.o_fours} four-in-a-row${result.o_fours !== 1 ? 's' : ''}!`;
-            else if (result.winner === 'X') reasonText = `AI got ${result.x_fours} four-in-a-row${result.x_fours !== 1 ? 's' : ''}!`;
-            else if (result.winner === 'Draw') reasonText = 'Board is full with no winner';
-            else if (result.winner === 'Tie') reasonText = `Both players got ${result.x_fours} four-in-a-row${result.x_fours !== 1 ? 's' : ''} each`;
-            
-            document.getElementById('finalReason').textContent = reasonText;
-            
             finalOverlay.style.display = 'flex';
-            gameStarted = false;
-            document.getElementById('startBtn').disabled = false;
-            document.getElementById('resetBtn').disabled = false;
         }
 
-        function hideFinalOverlay(resetAfterClose){
+        function hideFinalOverlay(shouldReset){
             finalOverlay.style.display = 'none';
         }
 
-        /* Tree drawing with scrollable centered canvas */
+        // Tree visualization functions
         function drawTree(treeData){
+            if (!treeData) return;
+
             const canvas = document.getElementById('treeCanvas');
             const ctx = canvas.getContext('2d');
             const container = document.getElementById('treeContainer');
+            const debugEl = document.getElementById('treeDebug');
             
+            // hide empty message and show canvas
             document.getElementById('treeEmpty').style.display = 'none';
             canvas.style.display = 'block';
-            
-            const positions = [];
-            calculatePositions(treeData, 0, positions);
-            
-            // Find the bounds of the tree
-            const minX = Math.min(...positions.map(p=>p.x));
-            const maxX = Math.max(...positions.map(p=>p.x));
-            const minY = Math.min(...positions.map(p=>p.y));
-            const maxY = Math.max(...positions.map(p=>p.y));
-            
-            // Add generous padding around the tree
-            const padding = 200;
-            const treeWidth = maxX - minX + 2 * padding;
-            const treeHeight = maxY - minY + 2 * padding;
-            
-            // Set canvas size to accommodate the entire tree
-            canvas.width = Math.max(treeWidth, 1400);
-            canvas.height = Math.max(treeHeight, 900);
-            
-            // Shift all positions to ensure nothing is cut off
-            const offsetX = padding - minX;
-            const offsetY = padding - minY;
-            
-            // Adjust all positions
-            positions.forEach(pos => {
-                pos.x += offsetX;
-                pos.y += offsetY;
-            });
-            
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.lineCap = 'round';
-            
-            // Draw edges first
-            positions.forEach(pos => {
-                if (pos.parent) {
-                    const isPruned = pos.node.type === 'PRUNED' || pos.node.pruned === true;
-                    drawEdge(ctx, pos.parent.x, pos.parent.y, pos.x, pos.y, isPruned, pos.node.probability);
+            debugEl.style.display = 'block';
+
+            try {
+                // Temporarily use a more compact layout for visualization so
+                // very-wide trees don't render tiny when fitted to the page.
+                const origRadius = NODE_RADIUS, origLevel = LEVEL_HEIGHT, origSpacing = MIN_NODE_SPACING, origPadding = PADDING;
+                // Reduce horizontal spacing and vertical spacing for compact view
+                NODE_RADIUS = Math.max(20, Math.round(NODE_RADIUS * 1.0));
+                LEVEL_HEIGHT = Math.max(90, Math.round(LEVEL_HEIGHT * 0.6));
+                MIN_NODE_SPACING = Math.max(60, Math.round(MIN_NODE_SPACING * 0.35));
+                PADDING = Math.max(40, Math.round(PADDING * 0.6));
+
+                // Calculate tree dimensions (compact)
+                const treeMetrics = calculateTreeMetrics(treeData);
+                const rawWidth = Math.max(treeMetrics.width + PADDING * 2, 1000);
+                const rawHeight = Math.max(treeMetrics.height + PADDING * 2, 500);
+
+                // Cap logical canvas size to avoid insane dimensions but allow larger buffers
+                const MAX_CANVAS_WIDTH = 10000;
+                const MAX_CANVAS_HEIGHT = 6000;
+
+                const renderWidth = Math.min(rawWidth, MAX_CANVAS_WIDTH);
+                const renderHeight = Math.min(rawHeight, MAX_CANVAS_HEIGHT);
+
+                // Prepare canvas drawing buffer (logical size)
+                canvas.width = renderWidth;
+                canvas.height = renderHeight;
+
+                // Clear canvas
+                ctx.clearRect(0, 0, renderWidth, renderHeight);
+
+                // Compute scale to fit raw layout into buffer
+                const drawScale = renderWidth / rawWidth;
+                ctx.save();
+                ctx.scale(drawScale, drawScale);
+
+                // Draw tree using raw layout coordinates
+                drawNode(ctx, treeData, rawWidth / 2, PADDING + NODE_RADIUS, 0, rawWidth - PADDING * 2);
+                ctx.restore();
+
+                // Fit the canvas element into the container width and apply user zoom
+                const containerWidth = container.clientWidth - 24;
+                const baseFit = containerWidth / renderWidth;
+                // Use a higher minimum fit so trees remain legible
+                const fitScale = Math.min(8, Math.max(0.6, baseFit * userZoom));
+                // Center transform horizontally and anchor at top
+                canvas.style.transformOrigin = '50% 0';
+                canvas.style.transform = `scale(${fitScale})`;
+                canvas.style.width = renderWidth + 'px';
+                canvas.style.height = renderHeight + 'px';
+                // Center canvas element in container
+                canvas.style.display = 'block';
+                canvas.style.margin = '0 auto';
+
+                // Scroll to center horizontally
+                container.scrollLeft = Math.max(0, (renderWidth * fitScale - container.clientWidth) / 2);
+
+                // Store last tree and show debug information on-screen
+                lastTreeData = treeData;
+                debugEl.innerHTML = `raw: ${rawWidth}×${rawHeight}<br>buffer: ${renderWidth}×${renderHeight}<br>drawScale: ${drawScale.toFixed(3)}<br>fitScale: ${fitScale.toFixed(3)}<br>userZoom: ${userZoom.toFixed(2)}x<br>leaves: ${treeMetrics.leaves}`;
+                console.info('Tree draw metrics:', { rawWidth, rawHeight, renderWidth, renderHeight, drawScale, fitScale, leaves: treeMetrics.leaves });
+
+                // restore original layout metrics
+                NODE_RADIUS = origRadius; LEVEL_HEIGHT = origLevel; MIN_NODE_SPACING = origSpacing; PADDING = origPadding;
+
+            } catch (err) {
+                // If any drawing error occurs show it visually
+                console.error('Error drawing tree:', err);
+                document.getElementById('treeEmpty').textContent = 'Error rendering tree: ' + (err && err.message ? err.message : String(err));
+                document.getElementById('treeEmpty').style.display = 'block';
+                canvas.style.display = 'none';
+                debugEl.innerHTML = `<strong style="color:#f88">Error</strong>: ${err && err.message ? err.message : String(err)}`;
+            }
+        }
+
+        // Draw the tree into the fullscreen overlay canvas
+        function drawTreeFull(treeData){
+            if (!treeData) return;
+            const canvas = document.getElementById('treeCanvasFull');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const wrapper = canvas.parentElement;
+
+            try {
+                // Use larger visual metrics for fullscreen
+                const origRadius = NODE_RADIUS, origLevel = LEVEL_HEIGHT, origSpacing = MIN_NODE_SPACING;
+                NODE_RADIUS = Math.max(36, Math.round(origRadius * 0.9));
+                LEVEL_HEIGHT = Math.max(140, Math.round(origLevel * 0.9));
+                MIN_NODE_SPACING = Math.max(140, Math.round(origSpacing * 0.9));
+
+                const treeMetrics = calculateTreeMetrics(treeData);
+                const rawWidth = Math.max(treeMetrics.width + PADDING * 2, 1600);
+                const rawHeight = Math.max(treeMetrics.height + PADDING * 2, 900);
+
+                const MAX_CANVAS_WIDTH = 20000;
+                const MAX_CANVAS_HEIGHT = 8000;
+
+                const renderWidth = Math.min(rawWidth, MAX_CANVAS_WIDTH);
+                const renderHeight = Math.min(rawHeight, MAX_CANVAS_HEIGHT);
+
+                canvas.width = renderWidth;
+                canvas.height = renderHeight;
+                ctx.clearRect(0,0,renderWidth,renderHeight);
+
+                const drawScale = renderWidth / rawWidth;
+                ctx.save(); ctx.scale(drawScale, drawScale);
+                drawNode(ctx, treeData, rawWidth / 2, PADDING + NODE_RADIUS, 0, rawWidth - PADDING * 2);
+                ctx.restore();
+
+                // Fit to wrapper area
+                let availW = wrapper.clientWidth;
+                let availH = wrapper.clientHeight;
+                // if wrapper hasn't been laid out yet, try again on next frame
+                if (!availW || !availH) {
+                    requestAnimationFrame(()=> drawTreeFull(treeData));
+                    return;
                 }
-            });
-            
-            // Draw nodes
-            positions.forEach(pos => drawNode(ctx, pos.x, pos.y, pos.node));
-            
-            // Center the canvas in the container view
-            setTimeout(() => {
-                // Find root position and center on it
-                const rootPos = positions[0];
-                if (rootPos) {
-                    container.scrollLeft = rootPos.x - container.clientWidth / 2;
-                    container.scrollTop = 0;
-                } else {
-                    container.scrollLeft = (canvas.width - container.clientWidth) / 2;
-                    container.scrollTop = 0;
-                }
-            }, 10);
-        }
+                const fitScale = Math.min(availW / renderWidth, availH / renderHeight, 2.5);
+                canvas.style.transformOrigin = '50% 0';
+                canvas.style.transform = `scale(${fitScale})`;
+                canvas.style.width = renderWidth + 'px';
+                canvas.style.height = renderHeight + 'px';
 
-        function calculatePositions(node, level, positions, parent=null, baseX=0, offsetX=0){
-            const LEVEL_HEIGHT = 100;
-            const NODE_SPACING = 120;
-            const y = 60 + level * LEVEL_HEIGHT;
-            let x = baseX;
-            
-            if (parent) {
-                // Position children relative to parent
-                const siblings = parent.node.children || [];
-                const siblingIndex = siblings.indexOf(node);
-                const totalWidth = (siblings.length - 1) * NODE_SPACING;
-                x = parent.x - totalWidth / 2 + siblingIndex * NODE_SPACING;
-            }
-            
-            const pos = { x, y, node, parent };
-            positions.push(pos);
-            
-            if (node.children && node.children.length > 0){
-                node.children.forEach(child => calculatePositions(child, level + 1, positions, pos, x, 0));
+                // restore
+                NODE_RADIUS = origRadius; LEVEL_HEIGHT = origLevel; MIN_NODE_SPACING = origSpacing;
+            } catch (err){
+                console.error('drawTreeFull error', err);
             }
         }
 
-        function drawEdge(ctx, x1, y1, x2, y2, isPruned, probability){
+        function calculateTreeMetrics(node, level = 0){
+            if (!node) return { width: 0, height: 0, leaves: 0 };
+            
+            if (!node.children || node.children.length === 0){
+                return { 
+                    width: MIN_NODE_SPACING, 
+                    height: LEVEL_HEIGHT * (level + 1), 
+                    leaves: 1 
+                };
+            }
+
+            let totalLeaves = 0;
+            let maxHeight = 0;
+
+            for (const child of node.children){
+                const childMetrics = calculateTreeMetrics(child, level + 1);
+                totalLeaves += childMetrics.leaves;
+                maxHeight = Math.max(maxHeight, childMetrics.height);
+            }
+
+            return {
+                width: Math.max(totalLeaves * MIN_NODE_SPACING, MIN_NODE_SPACING * node.children.length),
+                height: maxHeight,
+                leaves: totalLeaves
+            };
+        }
+
+        function drawNode(ctx, node, x, y, level, availableWidth){
+            if (!node) return;
+
+            // Get node color based on type
+            const colors = {
+                'MAX': { fill: 'rgba(77, 163, 255, 0.9)', stroke: '#4da3ff' },
+                'MIN': { fill: 'rgba(255, 107, 203, 0.9)', stroke: '#ff6bcb' },
+                'CHANCE': { fill: 'rgba(255, 209, 102, 0.9)', stroke: '#ffd166' },
+                'OUTCOME': { fill: 'rgba(6, 214, 160, 0.9)', stroke: '#06d6a0' },
+                'LEAF': { fill: 'rgba(6, 214, 160, 0.9)', stroke: '#06d6a0' },
+                'PRUNED': { fill: 'rgba(160, 160, 160, 0.95)', stroke: '#8f8f8f' }
+            };
+
+            // If the node was marked as pruned, render it using the PRUNED color
+            const effectiveType = node.pruned ? 'PRUNED' : node.type;
+            const color = colors[effectiveType] || { fill: '#666', stroke: '#444' };
+
+            // Draw node circle
             ctx.beginPath();
-            ctx.moveTo(x1, y1 + 28);
-            ctx.lineTo(x2, y2 - 28);
-            ctx.strokeStyle = isPruned ? 'rgba(150,150,150,0.35)' : 'rgba(160,180,200,0.9)';
-            ctx.lineWidth = isPruned ? 1 : 2;
-            ctx.setLineDash(isPruned ? [6,6] : []);
-            ctx.stroke();
-            ctx.setLineDash([]);
-            
-            // Draw probability on edge for EXPECTED nodes
-            if (probability !== undefined && probability !== null) {
-                const midX = (x1 + x2) / 2;
-                const midY = (y1 + y2) / 2;
-                ctx.fillStyle = 'rgba(255,209,102,0.9)';
-                ctx.font = '600 10px system-ui, sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText(`p=${probability.toFixed(2)}`, midX, midY);
-            }
-        }
-
-        function drawNode(ctx, x, y, node){
-            const radius = 28;
-            let fillColor = '#1f2d3a';
-            let textColor = '#fff';
-            const type = (node.type || '').toUpperCase();
-            
-            if (type === 'MAX'){ 
-                fillColor = 'rgba(77,163,255,0.95)'; 
-                textColor = '#071028'; 
-            } else if (type === 'MIN'){ 
-                fillColor = 'rgba(255,107,203,0.95)'; 
-                textColor = '#071028'; 
-            } else if (type === 'CHANCE' || type === 'EXPECT' || type === 'EXPECTED'){ 
-                fillColor = 'rgba(255,209,102,0.95)'; 
-                textColor = '#071028'; 
-            } else if (type === 'PRUNED' || node.pruned === true){ 
-                fillColor = 'rgba(120,120,120,0.85)'; 
-                textColor = '#e9e9e9'; 
-            } else if (type === 'LEAF') {
-                fillColor = 'rgba(100,100,100,0.9)';
-                textColor = '#fff';
-            }
-
-            ctx.beginPath();
-            ctx.arc(x, y, radius, 0, Math.PI * 2);
-            ctx.fillStyle = fillColor; 
+            ctx.arc(x, y, NODE_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = color.fill;
             ctx.fill();
-            ctx.lineWidth = 2; 
-            ctx.strokeStyle = 'rgba(255,255,255,0.12)'; 
+            ctx.strokeStyle = color.stroke;
+            ctx.lineWidth = 3;
             ctx.stroke();
 
-            // Draw label
-            if (node.label || type){
-                ctx.fillStyle = 'rgba(255,255,255,0.92)';
-                ctx.font = '700 11px system-ui, sans-serif';
-                ctx.textAlign = 'center';
-                const labelText = (node.label ? node.label : '') + (type && type !== 'LEAF' ? (node.label ? ' · ' + type : type) : '');
-                ctx.fillText(labelText, x, y - radius - 12);
+            // Draw label above node (size based on NODE_RADIUS)
+            ctx.fillStyle = '#ffffff';
+            ctx.font = `bold ${Math.max(11, Math.round(NODE_RADIUS * 0.5))}px system-ui`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            const labelText = node.label || node.type;
+            ctx.fillText(labelText, x, y - NODE_RADIUS - 5);
+
+            // Draw score inside node
+            const scoreText = typeof node.score === 'number' ? node.score.toFixed(1) : (node.score || '');
+            ctx.font = `bold ${Math.max(12, Math.round(NODE_RADIUS * 0.45))}px system-ui`;
+            ctx.textBaseline = 'middle';
+            // Use a lighter text color for PRUNED nodes so the marker is visible on gray
+            if (node.type === 'PRUNED') {
+                ctx.fillStyle = '#071028';
+            } else {
+                ctx.fillStyle = '#071028';
+            }
+            ctx.fillText(scoreText, x, y);
+
+            // Draw alpha/beta if present (for MAX/MIN nodes)
+            if (node.alpha !== undefined && node.alpha !== null || node.beta !== undefined && node.beta !== null) {
+                const abText = `α:${(node.alpha !== null && node.alpha !== undefined) ? Number(node.alpha).toFixed(1) : 'N/A'} β:${(node.beta !== null && node.beta !== undefined) ? Number(node.beta).toFixed(1) : 'N/A'}`;
+                ctx.font = `${Math.max(10, Math.round(NODE_RADIUS * 0.18))}px system-ui`;
+                ctx.textBaseline = 'top';
+                ctx.fillStyle = '#cfe9ff';
+                ctx.fillText(abText, x, y + NODE_RADIUS + 6);
             }
 
-            // Draw score
-            const scoreValue = node.value !== undefined && node.value !== null ? node.value : node.score;
-            if (scoreValue !== undefined && scoreValue !== null){
-                ctx.fillStyle = textColor;
-                ctx.font = '700 13px system-ui, sans-serif';
-                ctx.textAlign = 'center'; 
-                ctx.textBaseline = 'middle';
-                const scoreText = typeof scoreValue === 'number' ? scoreValue.toFixed(1) : scoreValue;
-                ctx.fillText(scoreText, x, y);
+            // If node was pruned, draw a small '✂' marker
+            if (node.pruned) {
+                ctx.font = `bold ${Math.max(12, Math.round(NODE_RADIUS * 0.45))}px system-ui`;
+                ctx.fillStyle = '#ffdd99';
+                ctx.fillText('✂', x + NODE_RADIUS - 18, y - NODE_RADIUS + 6);
             }
 
-            // Draw game result for leaf nodes
-            if (type === 'LEAF' && node.gameResult) {
-                const gr = node.gameResult;
-                ctx.fillStyle = 'rgba(255,255,255,0.85)';
-                ctx.font = '600 9px system-ui, sans-serif';
-                ctx.textAlign = 'center';
-                let resultLine1 = `O:${gr.o_fours} X:${gr.x_fours}`;
-                let resultLine2 = gr.winner ? `W:${gr.winner}` : '';
-                ctx.fillText(resultLine1, x, y + radius + 14);
-                if (resultLine2) {
-                    ctx.fillText(resultLine2, x, y + radius + 26);
+            // Draw children
+            if (node.children && node.children.length > 0){
+                const childY = y + LEVEL_HEIGHT;
+                const childCount = node.children.length;
+                
+                // Calculate positions for children
+                let positions = [];
+                if (childCount === 1) {
+                    positions = [x];
+                } else {
+                    const spacing = Math.max(MIN_NODE_SPACING, availableWidth / (childCount + 1));
+                    const totalWidth = spacing * (childCount - 1);
+                    const startX = x - totalWidth / 2;
+                    
+                    for (let i = 0; i < childCount; i++){
+                        positions.push(startX + (i * spacing));
+                    }
                 }
-            }
 
-            // Draw alpha-beta values if present
-            const alpha = node.alpha !== undefined && node.alpha !== null ? node.alpha : null;
-            const beta = node.beta !== undefined && node.beta !== null ? node.beta : null;
-            if (alpha !== null || beta !== null){
-                ctx.fillStyle = 'rgba(240,240,240,0.9)'; 
-                ctx.font = '600 10px system-ui, sans-serif'; 
-                ctx.textAlign = 'center';
-                const aText = alpha !== null ? `α:${(typeof alpha === 'number' ? alpha.toFixed(2) : alpha)}` : '';
-                const bText = beta !== null ? `β:${(typeof beta === 'number' ? beta.toFixed(2) : beta)}` : '';
-                const both = (aText && bText);
-                const extraOffset = (type === 'LEAF' && node.gameResult) ? 16 : 0;
-                ctx.fillText(both ? (aText + '  ' + bText) : (aText || bText), x, y + radius + 12 + extraOffset);
-            }
+                // Draw lines and child nodes
+                for (let i = 0; i < childCount; i++){
+                    const childX = positions[i];
+                    const child = node.children[i];
 
-            // Draw X for pruned nodes
-            if (type === 'PRUNED' || node.pruned === true){
-                ctx.strokeStyle = 'rgba(255,255,255,0.6)'; 
-                ctx.lineWidth = 2;
-                ctx.beginPath(); 
-                ctx.moveTo(x - 12, y - 12); 
-                ctx.lineTo(x + 12, y + 12); 
-                ctx.moveTo(x + 12, y - 12); 
-                ctx.lineTo(x - 12, y + 12); 
-                ctx.stroke();
+                    // Draw line to child
+                    ctx.beginPath();
+                    ctx.moveTo(x, y + NODE_RADIUS);
+                    ctx.lineTo(childX, childY - NODE_RADIUS);
+                    // Dim lines that lead to pruned children for clarity
+                    const childIsPruned = (child && (child.type === 'PRUNED' || child.pruned));
+                    ctx.strokeStyle = childIsPruned ? 'rgba(120,120,120,0.45)' : 'rgba(255, 255, 255, 0.15)';
+                    ctx.lineWidth = childIsPruned ? 1.5 : 2;
+                    ctx.stroke();
+
+                    // Calculate available width for child subtree
+                    const childWidth = childCount === 1 ? availableWidth : availableWidth / childCount;
+                    
+                    // Draw child node recursively
+                    drawNode(ctx, child, childX, childY, level + 1, childWidth);
+                }
             }
         }
 
-        window.addEventListener('load', init);
+        // Initialize on page load
+        init();
     </script>
 </body>
 </html>
