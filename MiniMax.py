@@ -1,5 +1,4 @@
 import helper
-
 def is_game_over(board):
     return all(board[r][c] != ' ' for r in range(helper.ROWS) for c in range(helper.COLS))
 

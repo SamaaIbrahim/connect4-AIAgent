@@ -51,13 +51,8 @@ def min_value_expected(board, depth, alpha, beta):
         return heuristic(board)
     v = float('inf')
     for col in get_valid_moves(board):
-        outcomes = _chance_outcomes_for_choice(board, col)
-        expected_score = 0.0
-        for actual_col, prob in outcomes:
-            child = move_to(board, actual_col, HUMAN)
-            expected_score += prob * max_value_expected(child, depth - 1, alpha, beta)
-        
-        v = min(v, expected_score)
+        child = move_to(board, col, HUMAN)
+        v = min(v, max_value_expected(child, depth - 1, alpha, beta))
         beta = min(beta, v)
         if alpha >= beta:
             return v
